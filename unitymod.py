@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 COMPLETE Game Module Generator System - Unity C# Modules
-Lane Isolation + Spec Lock + Iterative Agent Loop + Unity Testing
+Lane Isolation + Spec Lock + Iterative Agent Loop + Unity Module Generation
 """
  
 import os
@@ -34,19 +34,17 @@ class ModuleSpec:
 class ModuleLane:
     def __init__(self, spec: ModuleSpec, root: Path = None):
         self.spec = spec
-        #self.root = root / spec.name
         
         if root is None:
-            self.root = Path.cwd() / spec.name  # Default behavior
+            self.root = Path.cwd() / spec.name
         else:
-            self.root = Path("modules") / spec.name # Use passed root!        
+            self.root = Path("modules") / spec.name
         
-        print(f"🔍 LANE ROOT SET TO: {self.root.absolute()}")
+        print(f"LANE ROOT SET TO: {self.root.absolute()}")
         
-        #self.root = root.absolute()
         self.root.mkdir(parents=True, exist_ok=True)
 
-        print(f"✅ Lane root confirmed: {self.root.exists()} {self.root}")
+        print(f"Lane root confirmed: {self.root.exists()} {self.root}")
 
         self.scratchpad: List[Dict] = []
         self.audit_log: List[Dict] = []
@@ -152,7 +150,6 @@ class UnityTester:
 
  
 class GameModuleAgent:
-    #def __init__(self, model: str = "deepseek-coder:6.7b"):
     def __init__(self, model: str = "llama3-custom"):
         self.model = model
         self.tools = {
@@ -190,19 +187,19 @@ class GameModuleAgent:
         
         start_time = datetime.now()
         
-        # 🔥 STEP 1: SYSTEM DESIGN
+        # STEP 1: SYSTEM DESIGN
         print("\n🤔 STEP 1/3: ARCHITECTURE DESIGN...")
         design = self.template_processor.generate_design(lane.spec)
         lane.write_file("design.txt", design)
         print(f"   📄 SAVED: design.txt ({len(design)} chars)")
         
-        # 🔥 STEP 2: C# IMPLEMENTATION  
+        # STEP 2: C# IMPLEMENTATION  
         print("\n💻 STEP 2/3: CODE IMPLEMENTATION...")
         cs_code = self.template_processor.implement_design(lane.spec, lane.root / "design.txt")
         lane.write_file(f"{lane.spec.name}.cs", cs_code)
         print(f"   📄 SAVED: {lane.spec.name}.cs ({len(cs_code)} chars)")
         
-        # 🔥 STEP 3: VERIFICATION + AUTO-FIX
+        # STEP 3: VERIFICATION + AUTO-FIX
         print("\n✅ STEP 3/3: CODE VERIFICATION...")
         final_cs = self.template_processor.verify_and_fix(lane.spec, lane.root / f"{lane.spec.name}.cs")
         lane.write_file(f"{lane.spec.name}.cs", final_cs)  # Overwrite with verified version
@@ -219,29 +216,23 @@ class GameModuleAgent:
         end_time = datetime.now()
         duration = end_time - start_time
         print(f"\n🎉 3-STEP PIPELINE COMPLETE: {duration.total_seconds():.1f}s")
-        print(f"   ✅ {lane.spec.name} → PRODUCTION READY")
+        print(f"   {lane.spec.name} COMPLETED")
         
         return compile_result["success"]
 
     def _strip_comments(self, code: str) -> str:
         """Remove ONLY comments while preserving ALL indentation/whitespace"""
-        
         # Remove markdown first (preserves whitespace)
         code = re.sub(r'```csharp?\s*?\n?', '\n', code, flags=re.MULTILINE | re.IGNORECASE)
         code = re.sub(r'```\s*?\n?', '\n', code, flags=re.MULTILINE)
-        
         # Remove // single-line comments (preserve leading whitespace)
         def repl_single(match):
             return match.group(1) + '\n'  # Keep indentation, replace rest with newline
-        
         code = re.sub(r'^(\s*)//.*$', repl_single, code, flags=re.MULTILINE)
-        
         # Remove /* */ multi-line comments (preserve surrounding whitespace)
         code = re.sub(r'/\*.*?\*/', '', code, flags=re.DOTALL | re.MULTILINE)
-        
         # Clean up excessive blank lines only
         code = re.sub(r'\n\s*\n\s*\n\s*\n', '\n\n\n', code)
-        
         return code.strip()
 
     def _generate_readme(self, lane: ModuleLane):
@@ -332,17 +323,12 @@ EXAMPLE:
 
     def _strip_comments(self, code: str) -> str:
         """Remove ONLY comments while preserving ALL indentation/whitespace"""
-        # Remove markdown first (preserves whitespace)
         code = re.sub(r'```csharp?\s*?\n?', '\n', code, flags=re.MULTILINE | re.IGNORECASE)
         code = re.sub(r'```\s*?\n?', '\n', code, flags=re.MULTILINE)
-        # Remove // single-line comments (preserve leading whitespace)
         def repl_single(match):
             return match.group(1) + '\n'  # Keep indentation, replace rest with newline
-        
         code = re.sub(r'^(\s*)//.*$', repl_single, code, flags=re.MULTILINE)
-        # Remove /* */ multi-line comments (preserve surrounding whitespace)
         code = re.sub(r'/\*.*?\*/', '', code, flags=re.DOTALL | re.MULTILINE)
-        # Clean up excessive blank lines only
         code = re.sub(r'\n\s*\n\s*\n\s*\n', '\n\n\n', code)
         return code.strip()
 
@@ -401,7 +387,7 @@ RESPONSE: Either "✅ VERIFIED" or corrected code ONLY
             else:
                 print(f"   🔧 AUTO-FIX (iteration {iteration+1})")
                 cs_code = self._strip_comments(result)
-                cs_path.write_text(cs_code)  # Update file
+                cs_path.write_text(cs_code)
         
         print(f"   ⚠️  Max iterations reached, using final version")
         return cs_code
@@ -575,24 +561,18 @@ def main():
     generator = ModuleGenerator()
     
     specs = [
-        ModuleSpec(
-            name="WeaponSystem",
-            description="Fires bullets with rate limiting",
-            inputs=["FireEvent"],
-            outputs=["BulletSpawnedEvent"],
-            constraints=["Max 5 shots/sec", "30 bullet limit"]
-        ),
-        ModuleSpec(
-            name="BasicEconomy",
-            description="An economy system for a RPG style game. Currency should be based on shells.",
-            inputs=["PickupShellsEvent"],
-            outputs=["UseShellsEvent"],
-            constraints=["currency based on shells"]
-        )
+        # ModuleSpec(
+            # name="WeaponSystem",
+            # description="Fires bullets with rate limiting",
+            # inputs=["FireEvent"],
+            # outputs=["BulletSpawnedEvent"],
+            # constraints=["Max 5 shots/sec", "30 bullet limit"]
+        # )
     ]
  
     root = Path("modules")
     generator.generate_batch(specs, root=root)
     
 if __name__ == "__main__":
+
     main()
