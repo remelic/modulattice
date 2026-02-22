@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
 COMPLETE Game Module Generator System - Unity C# Modules
-Lane Isolation + Spec Lock + Iterative Agent Loop + Unity Module Generation
+Lane Isolation, Spec Lock, Iterative Agent Loop, Unity Module Generation
 """
- 
+
 import os
 import json
 import ollama
@@ -478,7 +478,7 @@ class DesignCompiler:
         gdd = self._generate_gdd(designs, modules)
         
         output_path = self.modules_path / "GAME_DESIGN.md"
-        output_path.write_text(gdd)
+        output_path.write_text(gdd, encoding='utf-8')
         print(f"✅ SAVED: {output_path}")
         
         return gdd
