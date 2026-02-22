@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Unity Module Factory</title>
+    <title>Modulattice - AI Powered Unity Module Generation</title>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -256,7 +256,7 @@
 					<small>Make sure server is running: <code>uvicorn app:app --reload</code></small>
 				</div>
 			`);
-			$('#generate-btn').prop('disabled', false).html('<i class="fas fa-rocket"></i> 🚀 GENERATE ALL MODULES');
+			$('#generate-btn').prop('disabled', false).html('<i class="fas fa-rocket"></i> GENERATE ALL MODULES');
 		};
 
 		ws.onclose = function() {
@@ -267,7 +267,7 @@
 	function resetGeneration() {
 		$('#agent-output').empty();
 		$('#status-badge').text('Ready').css('background', 'rgba(0,212,255,0.2)');
-		$('#generate-btn').prop('disabled', false).html('<i class="fas fa-rocket"></i> 🚀 GENERATE ALL MODULES');
+		$('#generate-btn').prop('disabled', false).html('<i class="fas fa-rocket"></i> GENERATE ALL MODULES');
 		$('#download-btn, #unity-btn').prop('disabled', true);
 		if (ws) ws.close();
 	}
