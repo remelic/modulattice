@@ -7,7 +7,6 @@ import os
 from pathlib import Path
 import json
 
-# IMPORT YOUR GENERATOR
 from unitymod import ModuleGenerator, ModuleSpec, ModuleLane, DesignCompiler
 
 app = FastAPI()
@@ -57,9 +56,7 @@ async def websocket_endpoint(websocket: WebSocket):
             await websocket.send_json({"type": "progress", "module": spec.name, "step": 2, "status": "Implementing C# code..."}) 
             await websocket.send_json({"type": "progress", "module": spec.name, "step": 3, "status": "Verifying + auto-fixing..."})            
             
-            # 🔥 Let generate_module() handle ALL progress naturally
             success = generator.agent.generate_module(lane)
-            
             
             # Final status
             files = lane.list_files()
@@ -96,7 +93,7 @@ async def download_gdd():
     return FileResponse("modules/GAME_DESIGN.md", filename="GAME_DESIGN.md")
 
 
-# ADD PER-MODULE DOWNLOAD
+# PER-MODULE DOWNLOAD
 @app.get("/download/{filename}")
 async def download_modules(filename: str):
     modules_path = Path("modules")
@@ -131,3 +128,4 @@ async def download_all_modules():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
