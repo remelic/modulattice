@@ -103,7 +103,7 @@ body {
 	border-radius: 12px;
 	font-weight: bold;
 	cursor: pointer;
-	transition: all 0.3s;
+	transition: all 0.12s;
 	text-transform: uppercase;
 	letter-spacing: 1px;
 }
@@ -123,9 +123,19 @@ body {
 	color: white;
 }
 
+.btn-danger:hover {
+	transform: scale(1.05);
+	box-shadow: 0 10px 25px rgba(255, 0, 0, 0.4);
+}
+
 .btn-success {
 	background: linear-gradient(45deg,#2ed573,#1abc9c);
 	color: white;
+}
+
+.btn-success:hover {
+	transform: scale(1.05);
+	box-shadow: 0 10px 25px rgba(4, 156, 29, 0.4);
 }
 
 .progress-bar {

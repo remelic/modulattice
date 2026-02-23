@@ -37,8 +37,6 @@ async def websocket_endpoint(websocket: WebSocket):
             spec = ModuleSpec(
                 name=spec_data["name"],
                 description=spec_data.get("description", ""),
-                inputs=spec_data.get("inputs", []),
-                outputs=spec_data.get("outputs", []),
                 constraints=spec_data.get("constraints", [])
             )
             

@@ -19,8 +19,6 @@ from contextlib import contextmanager
 class ModuleSpec:
     name: str
     description: str
-    inputs: List[str]
-    outputs: List[str]
     engine: str = "Unity"
     constraints: List[str] = None
     language: str = "C#"
@@ -146,8 +144,6 @@ class UnityTester:
         }
 
 
-
-
  
 class GameModuleAgent:
     def __init__(self, model: str = "llama3-custom"):
@@ -181,29 +177,29 @@ class GameModuleAgent:
 
     def generate_module(self, lane: ModuleLane) -> bool:
         print(f"\n{'='*70}")
-        print(f"🎮 3-STEP PIPELINE: {lane.spec.name}")
-        print(f"   📋 {lane.spec.description}")
+        print(f"3-STEP PIPELINE: {lane.spec.name}")
+        print(f"   {lane.spec.description}")
         print(f"{'='*70}")
         
         start_time = datetime.now()
         
         # STEP 1: SYSTEM DESIGN
-        print("\n🤔 STEP 1/3: ARCHITECTURE DESIGN...")
+        print("\nSTEP 1/3: ARCHITECTURE DESIGN...")
         design = self.template_processor.generate_design(lane.spec)
         lane.write_file("design.txt", design)
-        print(f"   📄 SAVED: design.txt ({len(design)} chars)")
+        print(f"   SAVED: design.txt ({len(design)} chars)")
         
         # STEP 2: C# IMPLEMENTATION  
-        print("\n💻 STEP 2/3: CODE IMPLEMENTATION...")
+        print("\nSTEP 2/3: CODE IMPLEMENTATION...")
         cs_code = self.template_processor.implement_design(lane.spec, lane.root / "design.txt")
         lane.write_file(f"{lane.spec.name}.cs", cs_code)
-        print(f"   📄 SAVED: {lane.spec.name}.cs ({len(cs_code)} chars)")
+        print(f"   SAVED: {lane.spec.name}.cs ({len(cs_code)} chars)")
         
         # STEP 3: VERIFICATION + AUTO-FIX
-        print("\n✅ STEP 3/3: CODE VERIFICATION...")
+        print("\nSTEP 3/3: CODE VERIFICATION...")
         final_cs = self.template_processor.verify_and_fix(lane.spec, lane.root / f"{lane.spec.name}.cs")
         lane.write_file(f"{lane.spec.name}.cs", final_cs)  # Overwrite with verified version
-        print(f"   📄 VERIFIED: {lane.spec.name}.cs")
+        print(f"   VERIFIED: {lane.spec.name}.cs")
         
         # Config + Metadata
         lane.write_file("Config.cs", self.template_processor.generate_config_class(lane.spec))
@@ -215,25 +211,25 @@ class GameModuleAgent:
         
         end_time = datetime.now()
         duration = end_time - start_time
-        print(f"\n🎉 3-STEP PIPELINE COMPLETE: {duration.total_seconds():.1f}s")
+        print(f"\n3-STEP PIPELINE COMPLETE: {duration.total_seconds():.1f}s")
         print(f"   {lane.spec.name} COMPLETED")
         
         return compile_result["success"]
 
-    def _strip_comments(self, code: str) -> str:
-        """Remove ONLY comments while preserving ALL indentation/whitespace"""
-        # Remove markdown first (preserves whitespace)
-        code = re.sub(r'```csharp?\s*?\n?', '\n', code, flags=re.MULTILINE | re.IGNORECASE)
-        code = re.sub(r'```\s*?\n?', '\n', code, flags=re.MULTILINE)
-        # Remove // single-line comments (preserve leading whitespace)
-        def repl_single(match):
-            return match.group(1) + '\n'  # Keep indentation, replace rest with newline
-        code = re.sub(r'^(\s*)//.*$', repl_single, code, flags=re.MULTILINE)
-        # Remove /* */ multi-line comments (preserve surrounding whitespace)
-        code = re.sub(r'/\*.*?\*/', '', code, flags=re.DOTALL | re.MULTILINE)
-        # Clean up excessive blank lines only
-        code = re.sub(r'\n\s*\n\s*\n\s*\n', '\n\n\n', code)
-        return code.strip()
+    # def _strip_comments(self, code: str) -> str:
+    #     """Remove ONLY comments while preserving ALL indentation/whitespace"""
+    #     # Remove markdown first (preserves whitespace)
+    #     code = re.sub(r'```csharp?\s*?\n?', '\n', code, flags=re.MULTILINE | re.IGNORECASE)
+    #     code = re.sub(r'```\s*?\n?', '\n', code, flags=re.MULTILINE)
+    #     # Remove // single-line comments (preserve leading whitespace)
+    #     def repl_single(match):
+    #         return match.group(1) + '\n'  # Keep indentation, replace rest with newline
+    #     code = re.sub(r'^(\s*)//.*$', repl_single, code, flags=re.MULTILINE)
+    #     # Remove /* */ multi-line comments (preserve surrounding whitespace)
+    #     code = re.sub(r'/\*.*?\*/', '', code, flags=re.DOTALL | re.MULTILINE)
+    #     # Clean up excessive blank lines only
+    #     code = re.sub(r'\n\s*\n\s*\n\s*\n', '\n\n\n', code)
+    #     return code.strip()
 
     def _generate_readme(self, lane: ModuleLane):
         spec = lane.spec
@@ -241,19 +237,12 @@ class GameModuleAgent:
 
     {spec.description}
 
-    ## 📥 Inputs
-    """ + "\n".join(f"- {inp}" for inp in spec.inputs) + f"""
-
-    ## 📤 Outputs  
-    """ + "\n".join(f"- {out}" for out in spec.outputs) + f"""
-
-    ## ⚙️ Constraints
+    ## Constraints
     """ + "\n".join(f"- {c}" for c in spec.constraints) + f"""
 
-    ## 🚀 Setup
+    ## Setup
     1. Create `{spec.name}/Config.asset`
     2. Add `{spec.name}` component to GameObject
-    3. Wire inputs/outputs in Inspector
     """
         lane.write_file("README.md", readme)
 
@@ -262,8 +251,6 @@ class GameModuleAgent:
         audit = {
             "timestamp": datetime.now().isoformat(),
             "module": lane.spec.name,
-            "inputs": lane.spec.inputs,
-            "outputs": lane.spec.outputs, 
             "constraints": lane.spec.constraints,
             "files": [str(f) for f in lane.list_files()],
             "root_path": str(lane.root)
@@ -276,9 +263,6 @@ class GameModuleAgent:
         readme = f"""# {lane.spec.name}
  
 **Spec**: {lane.spec.description}
- 
-**Inputs**: {', '.join(lane.spec.inputs)}
-**Outputs**: {', '.join(lane.spec.outputs)}
 **Constraints**: {', '.join(lane.spec.constraints)}
  
 ## Files Generated
@@ -300,8 +284,6 @@ class TemplateProcessor:
 
 Requirements:
 - Class name: `{spec.name}` (inherits MonoBehaviour)
-- Inputs: {', '.join(spec.inputs)}  
-- Outputs: {', '.join(spec.outputs)}
 - Constraints: {', '.join(spec.constraints)}
 - Uses: public Config config;
 
@@ -319,18 +301,18 @@ EXAMPLE:
 """
         response = ollama.chat(model="llama3-custom", messages=[{"role": "user", "content": prompt}])
         design = response['message']['content'].strip()
-        return self._strip_comments(design)  # Clean design doc
+        return _strip_comments(design)  # Clean design doc
 
-    def _strip_comments(self, code: str) -> str:
-        """Remove ONLY comments while preserving ALL indentation/whitespace"""
-        code = re.sub(r'```csharp?\s*?\n?', '\n', code, flags=re.MULTILINE | re.IGNORECASE)
-        code = re.sub(r'```\s*?\n?', '\n', code, flags=re.MULTILINE)
-        def repl_single(match):
-            return match.group(1) + '\n'  # Keep indentation, replace rest with newline
-        code = re.sub(r'^(\s*)//.*$', repl_single, code, flags=re.MULTILINE)
-        code = re.sub(r'/\*.*?\*/', '', code, flags=re.DOTALL | re.MULTILINE)
-        code = re.sub(r'\n\s*\n\s*\n\s*\n', '\n\n\n', code)
-        return code.strip()
+    # def _strip_comments(self, code: str) -> str:
+    #     """Remove ONLY comments while preserving ALL indentation/whitespace"""
+    #     code = re.sub(r'```csharp?\s*?\n?', '\n', code, flags=re.MULTILINE | re.IGNORECASE)
+    #     code = re.sub(r'```\s*?\n?', '\n', code, flags=re.MULTILINE)
+    #     def repl_single(match):
+    #         return match.group(1) + '\n'  # Keep indentation, replace rest with newline
+    #     code = re.sub(r'^(\s*)//.*$', repl_single, code, flags=re.MULTILINE)
+    #     code = re.sub(r'/\*.*?\*/', '', code, flags=re.DOTALL | re.MULTILINE)
+    #     code = re.sub(r'\n\s*\n\s*\n\s*\n', '\n\n\n', code)
+    #     return code.strip()
 
     def implement_design(self, spec, design_path: Path) -> str:
         """STEP 2: Implement design → C# code""" 
@@ -345,13 +327,15 @@ CRITICAL:
 - public Config config;
 - NO COMMENTS
 - PRODUCTION CODE ONLY
+- MODULAR CODE ONLY
+MEMORY: Avoid Update() allocations. Use pools for GameObjects. Pre-size Lists. Prefer structs.
 
 using UnityEngine;
 public class {spec.name} : MonoBehaviour {{ ... }}
 
 """
         response = ollama.chat(model="llama3-custom", messages=[{"role": "user", "content": prompt}])
-        code = self._strip_comments(response['message']['content'].strip())
+        code = _strip_comments(response['message']['content'].strip())
         return code
 
     def verify_and_fix(self, spec, cs_path: Path, max_iterations: int = 3) -> str:
@@ -372,24 +356,23 @@ Check:
 6. No syntax errors
 7. Respects design constraints
 
-If PERFECT: "✅ VERIFIED"
+If PERFECT: "VERIFIED"
 If ERRORS: Rewrite CORRECT version (no explanation)
 
-RESPONSE: Either "✅ VERIFIED" or corrected code ONLY
+RESPONSE: Either "VERIFIED" or corrected code ONLY
 """
-            
             response = ollama.chat(model="llama3-custom", messages=[{"role": "user", "content": prompt}])
             result = response['message']['content'].strip()
             
-            if result.startswith("✅ VERIFIED"):
-                print(f"   ✅ VERIFICATION PASSED (iteration {iteration+1})")
+            if result.startswith("VERIFIED"):
+                print(f"   VERIFICATION PASSED (iteration {iteration+1})")
                 return cs_code
             else:
-                print(f"   🔧 AUTO-FIX (iteration {iteration+1})")
-                cs_code = self._strip_comments(result)
+                print(f"   AUTO-FIX (iteration {iteration+1})")
+                cs_code = _strip_comments(result)
                 cs_path.write_text(cs_code)
         
-        print(f"   ⚠️  Max iterations reached, using final version")
+        print(f"   Max iterations reached, using final version")
         return cs_code
 
     def _fallback_class(self, spec: ModuleSpec) -> str:
@@ -405,8 +388,6 @@ public class {spec.name} : MonoBehaviour {{
     
     void Update() {{
         // TODO: Implement {spec.description}
-        // Inputs: {', '.join(spec.inputs)}
-        // Outputs: {', '.join(spec.outputs)}
     }}
 }}
 """
@@ -449,7 +430,7 @@ class ModuleGenerator:
             lane = ModuleLane(spec, module_path)
             success = self.agent.generate_module(lane)
            
-            status = "✅ COMPLETE" if success else "❌ FAILED"
+            status = "COMPLETE" if success else "FAILED"
             results.append(f"{status} {lane.root}")
             print(f"   {status}")
         
@@ -471,7 +452,7 @@ class DesignCompiler:
         if not modules:
             return "# No modules found\nCreate some modules first!"
         
-        print(f"🔬 COMPILING {len(modules)} modules into Game Design Document...")
+        print(f"COMPILING {len(modules)} modules into Game Design Document...")
         
         # LLM synthesizes the big picture
         designs = self._load_all_designs(modules)
@@ -479,7 +460,7 @@ class DesignCompiler:
         
         output_path = self.modules_path / "GAME_DESIGN.md"
         output_path.write_text(gdd, encoding='utf-8')
-        print(f"✅ SAVED: {output_path}")
+        print(f"SAVED: {output_path}")
         
         return gdd
     
@@ -499,20 +480,20 @@ class DesignCompiler:
             designs[module_folder.name] = design_file.read_text()
         return designs
 
-    def _strip_comments(self, code: str) -> str:
-        """Remove ONLY comments while preserving ALL indentation/whitespace"""
+    # def _strip_comments(self, code: str) -> str:
+    #     """Remove ONLY comments while preserving ALL indentation/whitespace"""
         
-        code = re.sub(r'```csharp?\s*?\n?', '\n', code, flags=re.MULTILINE | re.IGNORECASE)
-        code = re.sub(r'```\s*?\n?', '\n', code, flags=re.MULTILINE)
+    #     code = re.sub(r'```csharp?\s*?\n?', '\n', code, flags=re.MULTILINE | re.IGNORECASE)
+    #     code = re.sub(r'```\s*?\n?', '\n', code, flags=re.MULTILINE)
         
-        def repl_single(match):
-            return match.group(1) + '\n'
+    #     def repl_single(match):
+    #         return match.group(1) + '\n'
         
-        code = re.sub(r'^(\s*)//.*$', repl_single, code, flags=re.MULTILINE)
-        code = re.sub(r'/\*.*?\*/', '', code, flags=re.DOTALL | re.MULTILINE)
-        code = re.sub(r'\n\s*\n\s*\n\s*\n', '\n\n\n', code)
+    #     code = re.sub(r'^(\s*)//.*$', repl_single, code, flags=re.MULTILINE)
+    #     code = re.sub(r'/\*.*?\*/', '', code, flags=re.DOTALL | re.MULTILINE)
+    #     code = re.sub(r'\n\s*\n\s*\n\s*\n', '\n\n\n', code)
         
-        return code.strip()
+    #     return code.strip()
 
     
     def _generate_gdd(self, designs: Dict[str, str], modules: List[Path]) -> str:
@@ -530,10 +511,9 @@ DESIGNS:
 Create a cohesive GDD with:
 1. **GAME OVERVIEW** - What game emerges from these systems?
 2. **CORE LOOP** - How modules interact in gameplay?
-3. **EVENT FLOW** - Complete input→output chain
-4. **SYSTEM ARCHITECTURE** - Data flow diagram
-5. **GAMEPLAY PROGRESSION** - How systems evolve?
-6. **PLAYER EXPERIENCE** - What does it feel like to play?
+3. **SYSTEM ARCHITECTURE** - Data flow diagram
+4. **GAMEPLAY PROGRESSION** - How systems evolve?
+5. **PLAYER EXPERIENCE** - What does it feel like to play?
 
 Output professional Markdown GDD. NO CODE.
 
@@ -552,24 +532,31 @@ Output professional Markdown GDD. NO CODE.
             options={"temperature": 0.3}
         )
         
-        gdd = self._strip_comments(response['message']['content'].strip())
+        gdd = _strip_comments(response['message']['content'].strip())
         return gdd
 
- 
+def _strip_comments(code: str) -> str:
+    """Remove ONLY comments while preserving ALL indentation/whitespace"""
+    code = re.sub(r'```csharp?\s*?\n?', '\n', code, flags=re.MULTILINE | re.IGNORECASE)
+    code = re.sub(r'```\s*?\n?', '\n', code, flags=re.MULTILINE)
+    def repl_single(match):
+        return match.group(1) + '\n'
+    code = re.sub(r'^(\s*)//.*$', repl_single, code, flags=re.MULTILINE)
+    code = re.sub(r'/\*.*?\*/', '', code, flags=re.DOTALL | re.MULTILINE)
+    code = re.sub(r'\n\s*\n\s*\n\s*\n', '\n\n\n', code)
+    return code.strip()
+    
+
 # CLI Interface
 def main():
     generator = ModuleGenerator()
-    
     specs = [
         # ModuleSpec(
             # name="WeaponSystem",
             # description="Fires bullets with rate limiting",
-            # inputs=["FireEvent"],
-            # outputs=["BulletSpawnedEvent"],
             # constraints=["Max 5 shots/sec", "30 bullet limit"]
         # )
     ]
- 
     root = Path("modules")
     generator.generate_batch(specs, root=root)
     

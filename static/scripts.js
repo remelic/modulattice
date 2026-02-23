@@ -12,9 +12,7 @@ function addModule() {
 	modules.push({
 		id: id,
 		name: `Module${id + 1}`,
-		description: '',
-		inputs: ['InputEvent'],
-		outputs: ['OutputEvent'],
+		description: 'Describe your module in detail here.',
 		constraints: ['Constraint 1']
 	});
 	updateModuleList();
@@ -25,29 +23,21 @@ function addPreset(name) {
 		'WeaponSystem': {
 			name: 'WeaponSystem',
 			description: 'Fires bullets with rate limiting',
-			inputs: ['FireEvent'],
-			outputs: ['BulletSpawnedEvent'],
 			constraints: ['Max 5 shots/sec', '30 bullet limit']
 		},
 		'PlayerHealth': {
 			name: 'PlayerHealth',
 			description: 'Player HP with regeneration',
-			inputs: ['DamageEvent'],
-			outputs: ['HealthChangedEvent'],
 			constraints: ['Max HP 100', 'Regen 1/sec']
 		},
 		'EnemySpawner': {
 			name: 'EnemySpawner',
 			description: 'Spawns enemy waves',
-			inputs: ['WaveStartEvent'],
-			outputs: ['EnemySpawnedEvent'],
 			constraints: ['Max 50 enemies', '3 waves']
 		},
 		'ShufflerSystem': {
 			name: 'ShufflerSystem',
 			description: 'Fisher-Yates shuffle implementation',
-			inputs: ['ShuffleRequest'],
-			outputs: ['ShuffledEvent'],
 			constraints: ['Max 1000 items']
 		}
 	};
@@ -87,7 +77,7 @@ function updateModule(id, field, value) {
 	const module = modules.find(m => m.id == id);
 	if (!module) return;
 	
-	if (field === 'inputs' || field === 'outputs' || field === 'constraints') {
+	if (field === 'constraints') {
 		module[field] = value.split(',').map(s => s.trim()).filter(s => s);
 	} else {
 		module[field] = value;
@@ -106,9 +96,8 @@ function clearAll() {
 	$('#download-btn, #unity-btn').prop('disabled', true);
 	modules = [];
 	updateModuleList();
-	$('#download-btn, #unity-btn').prop('disabled', true);
-	if (ws) ws.close();
 	printRobotReset();
+	if (ws) ws.close();
 }
 
 function generateAll() {
@@ -164,6 +153,9 @@ function generateAll() {
 			if (data.success) {
 				$('#download-btn, #unity-btn').prop('disabled', false);
 				$('#generate-btn').prop('disabled', false).html('<i class="fas fa-rocket"></i> GENERATE ALL MODULES');
+				loadFolders();
+				modules = [];
+				updateModuleList();
 			}
 		} 
 		else if (data.type === 'error') {
