@@ -4,7 +4,10 @@
 
 <p align="center">
 <strong>Type a prompt → Get a complete Unity module folder → Drag it into your project.</strong>
+<br>
+Built by Unity devs for Unity devs
 </p>
+
 
 ***
 
