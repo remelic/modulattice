@@ -20,7 +20,7 @@ async def read_root():
             return HTMLResponse(content=f.read())
     except FileNotFoundError:
         return HTMLResponse(content="""
-        <h1>🚀 Unity Module Factory</h1>
+        <h1>Modulattice</h1>
         <p>Create <code>static/index.html</code> for full UI</p>
         """)
 
@@ -31,7 +31,7 @@ async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     try:
         specs_data = await websocket.receive_json()
-        print(f"🎮 Generating {len(specs_data)} modules: {[s['name'] for s in specs_data]}")
+        print(f"Generating {len(specs_data)} modules: {[s['name'] for s in specs_data]}")
         
         for spec_data in specs_data:
             spec = ModuleSpec(
@@ -72,7 +72,7 @@ async def websocket_endpoint(websocket: WebSocket):
     except WebSocketDisconnect:
         print("WebSocket disconnected")
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print(f"Error: {e}")
         await websocket.send_json({"type": "error", "message": str(e)})
 
 
