@@ -1,6 +1,6 @@
 # Modulattice
 
-**Generate Unity game modules from a single description.** An AI‑powered module factory that designs and writes self‑contained C# systems (code, config, docs) so you can stop fighting boilerplate and focus on game design. [github](https://github.com/zenika-open-source/promote-open-source-project)
+**Generate Unity game modules from a single description.** An AI‑powered module factory that designs and writes self‑contained C# systems (code, config, docs) so you can stop fighting boilerplate and focus on game design.
 
 <p align="center">
 <strong>Type a prompt → Get a complete Unity module folder → Drag it into your project.</strong>
@@ -45,7 +45,7 @@ MyPlayerHealthModule/
 └── README.md      # How to use this module in Unity
 ```
 
-Each module lives in its own folder, so Modulattice never touches your existing Unity project or IDE; you decide what to import. [github](https://github.com/rdp/open-source-how-to-popularize-your-project)
+Each module lives in its own folder, so Modulattice never touches your existing Unity project or IDE; you decide what to import.
 
 ***
 
