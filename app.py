@@ -36,6 +36,7 @@ async def websocket_endpoint(websocket: WebSocket):
         for spec_data in specs_data:
             spec = ModuleSpec(
                 name=spec_data["name"],
+                game_context=spec_data["game_context"],
                 description=spec_data.get("description", ""),
                 constraints=spec_data.get("constraints", [])
             )

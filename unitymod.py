@@ -19,6 +19,7 @@ from contextlib import contextmanager
 class ModuleSpec:
     name: str
     description: str
+    game_context: str = ""
     engine: str = "Unity"
     constraints: List[str] = None
     language: str = "C#"
@@ -192,17 +193,23 @@ class GameModuleAgent:
         # STEP 2: C# IMPLEMENTATION  
         print("\nSTEP 2/3: CODE IMPLEMENTATION...")
         cs_code = self.template_processor.implement_design(lane.spec, lane.root / "design.txt")
-        lane.write_file(f"{lane.spec.name}.cs", cs_code)
-        print(f"   SAVED: {lane.spec.name}.cs ({len(cs_code)} chars)")
+        lane.write_file(f"{lane.spec.name}_ORIGINAL.cs", cs_code)
+        print(f"   SAVED: {lane.spec.name}_ORIGINAL.cs ({len(cs_code)} chars)")
         
         # STEP 3: VERIFICATION + AUTO-FIX
         print("\nSTEP 3/3: CODE VERIFICATION...")
-        final_cs = self.template_processor.verify_and_fix(lane.spec, lane.root / f"{lane.spec.name}.cs")
-        lane.write_file(f"{lane.spec.name}.cs", final_cs)
-        print(f"VERIFIED: {lane.spec.name}.cs")
+        final_cs = self.template_processor.verify_and_fix(lane.spec, lane.root / f"{lane.spec.name}_ORIGINAL.cs")
+        lane.write_file(f"{lane.spec.name}_FIXED.cs", final_cs)
+        print(f"VERIFIED: {lane.spec.name}_FIXED.cs ({len(final_cs)} chars)")
         
+        if len(cs_code) != len(final_cs):
+            print("CHANGES MADE AND SAVED");
+
         # Config + Metadata
-        lane.write_file("Config.cs", self.template_processor.generate_config_class(lane.spec))
+        lane.write_file("Config.cs", self.template_processor.generate_config_class(
+            lane.spec, lane.root / "design.txt"  # Pass design!
+        ))
+
         self._generate_readme(lane)
         self._generate_audit(lane)
         
@@ -266,6 +273,8 @@ class TemplateProcessor:
     def generate_design(self, spec: ModuleSpec) -> str:
         """STEP 1: Generate COMPLETE Unity module blueprint"""
         prompt = f"""ARCHITECT a COMPLETE Unity C# {spec.name} module:
+    
+    GAME CONTEXT: {spec.game_context}
 
     SPEC: {spec.description}
     CONSTRAINTS: {', '.join(spec.constraints or [])}
@@ -342,6 +351,8 @@ class TemplateProcessor:
         
         messages = [
             {"role": "system", "content": """You translate Unity DESIGN BLUEPRINTS → PRODUCTION C# code EXACTLY.
+    
+    GAME CONTEXT: {spec.game_context}
 
     RULES:
     • Copy field names/types DIRECTLY from STATE MODEL section
@@ -417,18 +428,98 @@ class TemplateProcessor:
             errors.append("Missing using UnityEngine;")
         return errors
     
-    def generate_config_class(self, spec: ModuleSpec) -> str:
-        """Simple Config ScriptableObject - no LLM needed"""
+    def generate_config_class(self, spec: ModuleSpec, design_path: Optional[Path] = None) -> str:
+        """Generate Config ScriptableObject DIRECTLY from design blueprint"""
+        
+        if design_path and design_path.exists():
+            design = design_path.read_text()
+            config_fields = self._parse_config_fields(design, spec)
+        else:
+            config_fields = self._get_generic_fields(spec)
+        
+        fields_code = "    [Header(\"{spec.name} Settings\")]\n".format(spec=spec)
+        fields_code += "\n".join(config_fields)
+        
         return f"""using UnityEngine;
 
-[CreateAssetMenu(fileName = "{spec.name}", menuName = "Configs/{spec.name}")]
-public class Config : ScriptableObject {{
-    [Header("{spec.name} Settings")]
-    public float mainSpeed = 5f;
-    public int maxCount = 30;
-    [Range(0f, 10f)] public float cooldown = 1f;
-}}
-"""
+    [CreateAssetMenu(fileName = "{spec.name}", menuName = "Configs/{spec.name}")]
+    public class Config : ScriptableObject {{
+    {fields_code}
+    }}
+    """
+
+    def _parse_config_fields(self, design: str, spec: ModuleSpec) -> List[str]:
+        """Extract EXACT config fields from CONFIG FIELDS blueprint section"""
+        lines = design.splitlines()
+        config_lines = []
+        in_config_section = False
+        
+        for line in lines:
+            line = line.strip()
+            
+            # Detect CONFIG FIELDS section
+            if "CONFIG FIELDS" in line.upper():
+                in_config_section = True
+                continue
+                
+            if in_config_section:
+                # Parse: "float rate = config.fireRate // [Range(0.1, 10)]"
+                if "config." in line and "=" in line:
+                    field_code = self._parse_field_line(line, spec)
+                    if field_code:
+                        config_lines.append(field_code)
+                
+                # Stop at next section
+                if any(num in line for num in ["6.", "7.", "8."]) or not line:
+                    break
+        
+        return config_lines if config_lines else self._get_generic_fields(spec)
+
+    def _parse_field_line(self, line: str, spec: ModuleSpec) -> str:
+        """Parse single config field: "float rate = config.fireRate // [Range(0.1, 10)]" """
+        try:
+            # Extract field name after "config."
+            field_match = re.search(r'config\.(\w+)', line)
+            if not field_match:
+                return None
+                
+            field_name = field_match.group(1)
+            
+            # Type inference from line
+            type_map = {
+                'float': 'float', 'int': 'int', 'bool': 'bool',
+                'Vector2': 'Vector2', 'Vector3': 'Vector3'
+            }
+            field_type = 'float'  # Default
+            
+            for t in type_map:
+                if t in line:
+                    field_type = t
+                    break
+            
+            # Range attributes
+            range_attr = ""
+            range_match = re.search(r'\[Range\(([^)]+)\)\]', line)
+            if range_match:
+                range_attr = f"[Range({range_match.group(1)})]"
+            
+            # Default value
+            default_match = re.search(r'=([^/]+)', line)
+            default_val = " = 1f" if default_match else ""
+            
+            return f"    {range_attr} public {field_type} {field_name}{default_val};"
+            
+        except:
+            return None
+
+    def _get_generic_fields(self, spec: ModuleSpec) -> List[str]:
+        """Fallback generic fields"""
+        return [
+            f'    public float mainSpeed = 5f;',
+            f'    public int maxCount = 30;',
+            f'    [Range(0f, 10f)] public float cooldown = 1f;'
+        ]
+
 
     def generate_templates(self, spec: ModuleSpec) -> dict[str, str]:
         """Generate complete .cs files directly"""
@@ -641,6 +732,7 @@ def main():
     specs = [
         # ModuleSpec(
             # name="WeaponSystem",
+            # game_context="A 2D top-down game",
             # description="Fires bullets with rate limiting",
             # constraints=["Max 5 shots/sec", "30 bullet limit"]
         # )
