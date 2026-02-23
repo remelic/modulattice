@@ -10,13 +10,18 @@
 
 ## Quickstart
 
+```bash
 pip install fastapi uvicorn[standard] aiofiles ollama websockets modulattice
+```
 
+```bash
 # In the repo folder
 start.bat
+```
 
 Then:
-1. Open the web UI. (If not already open)
+
+1. Open the web UI.
 2. Enter a prompt like: `A player controller for a top‑down shooter`.
 3. Review the generated design + code.
 4. Copy the module folder into your Unity project once you’re happy with it.
@@ -31,12 +36,14 @@ Example:
 
 Outputs a self‑contained module folder:
 
+```text
 MyPlayerHealthModule/
 ├── audit.jsonl    # What the system was thinking during generation
 ├── design.txt     # Design document for the module
 ├── Config.cs      # Data class for configuration
 ├── PlayerHealth.cs# Main module code
 └── README.md      # How to use this module in Unity
+```
 
 Each module lives in its own folder, so Modulattice never touches your existing Unity project or IDE; you decide what to import. [github](https://github.com/rdp/open-source-how-to-popularize-your-project)
 
@@ -46,7 +53,9 @@ Each module lives in its own folder, so Modulattice never touches your existing 
 
 From PyPI:
 
+```bash
 pip install modulattice
+```
 
 **Supported / planned LLMs:**
 
