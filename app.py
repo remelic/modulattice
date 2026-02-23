@@ -6,6 +6,7 @@ import asyncio
 import os
 from pathlib import Path
 import json
+import shutil
 
 from unitymod import ModuleGenerator, ModuleSpec, ModuleLane, DesignCompiler
 
@@ -110,6 +111,47 @@ async def download_modules(filename: str):
             zf.writestr("manifest.json", json.dumps({"name": filename, "error": "Module not found"}))
     
     return FileResponse(zip_path, filename=f"{filename}.zip", media_type='application/zip')
+
+# GET EXISTING MODULES
+@app.get("/api/folders")
+async def get_folders():
+    FOLDER_PATH = Path("modules")
+    folders = []
+    
+    try:
+        path = Path(FOLDER_PATH)
+        if not path.exists():
+            return {"error": "Path not found"}
+        
+        for item in path.iterdir():
+            if item.is_dir():
+                folders.append({
+                    "name": item.name,
+                    "path": str(item.absolute()),
+                    "size": sum(p.stat().st_size for p in item.rglob("*") if p.is_file()),
+                    "modified": item.stat().st_mtime
+                })
+    except Exception as e:
+        return {"error": str(e)}
+    
+    return {"folders": folders}
+
+@app.delete("/api/folders/{folder_name}")
+async def delete_folder(folder_name: str):
+    FOLDER_PATH = "./modules"
+    target_folder = Path(FOLDER_PATH) / folder_name
+    
+    print({target_folder})
+
+    try:
+        if not target_folder.exists():
+            return {"error": "Folder not found"}
+        
+        shutil.rmtree(target_folder)
+        return {"success": f"Deleted {folder_name}"}
+        
+    except Exception as e:
+        return {"error": str(e)}
 
 # BATCH DOWNLOAD  
 @app.get("/download/all_modules.zip")

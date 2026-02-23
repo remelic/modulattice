@@ -25,6 +25,7 @@ body {
 .header h1 {
 	font-size: 3em;
 	background: linear-gradient(45deg,#00d4ff,#7b68ee);
+	background-clip: border-box;
 	-webkit-background-clip: text;
 	-webkit-text-fill-color: transparent;
 }
@@ -49,6 +50,10 @@ body {
 	padding: 25px;
 	height: 80vh;
 	overflow-y: auto;
+}
+
+.agent-panel h2 {
+	height: 40px;
 }
 
 .module-card {
@@ -179,6 +184,29 @@ body {
 
 .fade-in {
 	animation: fadeIn 0.5s ease-in;
+}
+
+.existing-modules-panel {
+	background: rgba(0, 0, 0, 0.3);
+	border-radius: 20px;
+	padding: 25px;
+	height: 80vh;
+	overflow-y: auto;
+}
+
+#folderTable {
+	width: 100%;
+}
+
+.existing-module {
+	width: 100%;
+	margin-bottom: 21px;
+	border-radius: 20px;
+}
+
+#folderTable h2 {
+	width: 100%;
+	font-size: 1.2em;
 }
 
 @keyframes pulse {
