@@ -1,82 +1,112 @@
 # Modulattice
 
-**Create modules from descriptions with one click**. An AI module generator that designs and writes C# code into self-contained modules. Built for Unity video game developers who are tired of writing boilerplate code and want to focus on design.
+**Generate Unity game modules from a single description.** An AI‑powered module factory that designs and writes self‑contained C# systems (code, config, docs) so you can stop fighting boilerplate and focus on game design.
 
 <p align="center">
+<strong>Type a prompt → Get a complete Unity module folder → Drag it into your project.</strong>
+<br>
+Built by Unity devs for Unity devs
 </p>
+
+
+***
 
 ## Quickstart
 
-Run pip install fastapi uvicorn[standard] aiofiles ollama websockets to setup all the python dependencies.
-use start.bat to launch the app and interface.
+```bash
+pip install fastapi uvicorn[standard] aiofiles ollama websockets modulattice
+```
 
-## Web Interface
+```bash
+# In the repo folder
+start.bat
+```
 
-1. Type what you want: *"A player controller for a top-down view"*
-2. Creates design docs and the requested module
-3. Copy-paste folder once sanatized by you
+Then:
 
-<p align="center">
-</p>
+1. Open the web UI.
+2. Enter a prompt like: `A player controller for a top‑down shooter`.
+3. Review the generated design + code.
+4. Copy the module folder into your Unity project once you’re happy with it.
+
+***
+
+## What Modulattice generates
+
+Example:
+
+> “A player health module that will handle players taking damage and dying”
+
+Outputs a self‑contained module folder:
+
+```text
+MyPlayerHealthModule/
+├── audit.jsonl    # What the system was thinking during generation
+├── design.txt     # Design document for the module
+├── Config.cs      # Data class for configuration
+├── PlayerHealth.cs# Main module code
+└── README.md      # How to use this module in Unity
+```
+
+Each module lives in its own folder, so Modulattice never touches your existing Unity project or IDE; you decide what to import.
+
+***
 
 ## Installation
+
+From PyPI:
 
 ```bash
 pip install modulattice
 ```
 
-**Supported LLMs:**
+**Supported / planned LLMs:**
 
-- `llama3` (default, hardcoded currently)
+- `llama3` (current default)
 - `deepseek-coder`
-- **Bring your own** (ollama, future feature)
+- Bring‑your‑own via Ollama (planned)
 
-## Example Outputs
-
-```
-"A player health module that will handle players taking damage and dying"
-
--> 5 files generated:
-├── audit.jsonl (an audit of what the system was thinking)
-├── design.txt (a design document for the module)
-├── Config.cs (a data class for the module if used)
-├── PlayerHealth.cs (the module code file)
-└── README.md
-```
+***
 
 ## Contributing
 
-1. Fork -> Clone -> Branch (`feat/amazing-feature`)
-2. Submit PR with **squash merge**
-3. Star the repo (helps visibility)
-4. Join [Discussions](https://github.com/remelic/modulattice/discussions)
+1. Fork → Clone → Create a branch (`feat/amazing-feature`).
+2. Implement your changes and add/update tests or examples.
+3. Open a PR (squash merge preferred).
+4. Star the repo if Modulattice helps you – it really boosts visibility.
 
 ```bash
-git clone https://github.com/YOURNAME/modulattice.git
+git clone https://github.com/remelic/modulattice.git
 cd modulattice
 pip install -r requirements-dev.txt
 start.bat
 ```
 
+Discussions and ideas: [GitHub Discussions](https://github.com/remelic/modulattice/discussions)
+
+***
+
 ## Sponsor the Lattice
 
-Help fuel cosmic code generation!
+Help fuel more Unity templates, better tooling, and faster code generation.
 
+***
 
 ## Connect
 
 - 🌐 [modulattice.com](https://modulattice.com)
 - 🐦 [@remelic](https://x.com/remelic)
-- 💬 [Discord] - Coming Soon...
 - 📧 [info@modulattice.com](mailto:info@modulattice.com)
+- 💬 Discord – coming soon
 
+***
 
 ## License
 
 MIT © [remelic](https://github.com/remelic)
 
 <div align="center">
-*** Smart - Fast - Helpful ***
+*** Smart – Fast – Helpful ***
 </div>
 
-**Made with [Modulattice](https://modulattice.com)**
+**Made with Modulattice**
