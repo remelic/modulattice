@@ -14,7 +14,7 @@ Built by Unity devs for Unity devs
 ## Quickstart
 
 ```bash
-pip install fastapi uvicorn[standard] aiofiles ollama websockets modulattice
+pip install fastapi uvicorn[standard] aiofiles ollama websockets modulattice requests
 ```
 
 ```bash
