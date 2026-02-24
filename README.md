@@ -66,7 +66,7 @@ pip install modulattice
 
 - `llama3` (current default)
 - `deepseek-coder`
-- Bring‑your‑own via Ollama (planned)
+- Choose‑your‑own via Ollama
 
 ***
 
