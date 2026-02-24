@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import json
 import shutil
+import requests
 
 from unitymod import ModuleGenerator, ModuleSpec, ModuleLane, DesignCompiler
 
@@ -111,17 +112,43 @@ async def download_modules(filename: str):
     
     return FileResponse(zip_path, filename=f"{filename}.zip", media_type='application/zip')
 
+
+# GET INSTALLED OLLAMA MODELS
+@app.get("/api/tags")
+async def list_models():
+    try:
+        response = requests.get("http://localhost:11434/api/tags")
+        response.raise_for_status()
+        return response.json()  # ← Just return the dict!
+    except Exception as e:
+        print(f"Ollama error: {e}")
+        return {"models": []}  # ← Just return the dict!
+
+# GET OLLAMA MODELS
+@app.post("/api/pull-model")
+async def pull_model(model_name: str):
+    try:
+        response = requests.post("http://localhost:11434/api/pull",
+                               json={"name": model_name})
+        if response.status_code == 200:
+            return {"success": True, "model": model_name}
+        return {"success": False, "error": "Pull failed"}
+    except:
+        return {"success": False, "error": "Ollama not running"}
+
 # GET EXISTING MODULES
 @app.get("/api/folders")
 async def get_folders():
     FOLDER_PATH = Path("modules")
     folders = []
-    
+    has_game_design = False
     try:
         path = Path(FOLDER_PATH)
         if not path.exists():
             return {"error": "Path not found"}
-        
+
+        has_game_design = (path / "GAME_DESIGN.md").exists()
+
         for item in path.iterdir():
             if item.is_dir():
                 folders.append({
@@ -133,7 +160,7 @@ async def get_folders():
     except Exception as e:
         return {"error": str(e)}
     
-    return {"folders": folders}
+    return {"folders": folders, "has_game_design": has_game_design}
 
 @app.delete("/api/folders/{folder_name}")
 async def delete_folder(folder_name: str):
@@ -152,7 +179,21 @@ async def delete_folder(folder_name: str):
     except Exception as e:
         return {"error": str(e)}
 
-# BATCH DOWNLOAD  
+# DELETE GAME DESIGN
+@app.delete("/api/game-design/delete")
+async def delete_game_design():
+    file_path = Path("./modules") / "GAME_DESIGN.md"
+    
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="GAME_DESIGN.md not found")
+    
+    file_path.unlink()
+    if file_path.exists():
+        raise HTTPException(status_code=500, detail="Delete failed")
+    
+    return {"success": True}
+
+# BATCH DOWNLOAD
 @app.get("/download/all_modules.zip")
 async def download_all_modules():
     zip_path = Path("all_modules.zip")

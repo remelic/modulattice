@@ -219,6 +219,129 @@ body {
 	font-size: 1.2em;
 }
 
+.expand-flex {
+	flex-grow: 1;
+}
+
+
+.quick-installs {
+	display: flex;
+	gap: 10px;
+	flex-wrap: wrap;
+	justify-content: space-between;
+}
+
+
+.glassy-dropdown {
+	position: relative;
+	width: 300px;
+	font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.dropdown-trigger {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 16px 20px;
+	background: rgba(255, 255, 255, 0.1);
+	backdrop-filter: blur(20px);
+	-webkit-backdrop-filter: blur(20px);
+	border: 1px solid rgba(255, 255, 255, 0.2);
+	border-radius: 16px;
+	color: white;
+	font-size: 16px;
+	font-weight: 500;
+	cursor: pointer;
+	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+	transition: all 0.3s ease;
+	user-select: none;
+}
+
+.dropdown-trigger:hover {
+	background: rgba(255, 255, 255, 0.15);
+	border-color: rgba(255, 255, 255, 0.3);
+	transform: translateY(-2px);
+	box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+}
+
+.dropdown-list {
+	position: absolute;
+	top: 100%;
+	left: 0;
+	right: 0;
+	margin-top: 8px;
+	background: rgba(30, 30, 46, 0.95);
+	backdrop-filter: blur(25px);
+	-webkit-backdrop-filter: blur(25px);
+	border: 1px solid rgba(255, 255, 255, 0.15);
+	border-radius: 16px;
+	box-shadow:
+		0 20px 40px rgba(0, 0, 0, 0.4),
+		0 0 0 1px rgba(255, 255, 255, 0.05);
+	opacity: 0;
+	visibility: hidden;
+	transform: translateY(-10px);
+	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+	max-height: 300px;
+	overflow-y: auto;
+	z-index: 1000;
+}
+
+.dropdown-list.active {
+	opacity: 1;
+	visibility: visible;
+	transform: translateY(0);
+}
+
+.dropdown-option {
+	padding: 14px 20px;
+	color: rgba(255, 255, 255, 0.9);
+	font-size: 15px;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+	position: relative;
+	overflow: hidden;
+}
+
+.dropdown-option:hover {
+	background: rgba(255, 255, 255, 0.1);
+	color: white;
+	padding-left: 28px;
+	box-shadow: inset 4px 0 0 rgba(59, 130, 246, 0.5);
+}
+
+.dropdown-option:last-child {
+	border-bottom: none;
+	border-radius: 0 0 16px 16px;
+}
+
+.dropdown-option:first-child {
+	border-radius: 16px 16px 0 0;
+}
+
+.dropdown-arrow {
+	transition: transform 0.3s ease;
+}
+
+.dropdown-list.active~.dropdown-arrow,
+.dropdown-trigger.active .dropdown-arrow {
+	transform: rotate(180deg);
+}
+
+.model-section {
+	background: linear-gradient(135deg, #1e1e2e 0%, #2a1e3d 100%);
+	padding: 2rem;
+	border-radius: 24px;
+	backdrop-filter: blur(10px);
+}
+
+/* .model-section {
+	border: 1px #00d4ff solid;
+	border-radius: 20px;
+	padding: 20px;
+} */
+
 @keyframes pulse {
 	0%, 100% {
 		opacity: 1;
