@@ -2,8 +2,10 @@ let modules = [];
 let ws = null;
 let generationComplete = false;
 let gameContext = "A 2D top-down game.";
+let dropdown = null;
 
 $(document).ready(async function() {
+	loadOllamaModels();
 	updateModuleList();
 	await loadFolders();
 });
@@ -23,28 +25,25 @@ function addModule() {
 function addPreset(name) {
 	const presets = {
 		'WeaponSystem': {
-			name: 'WeaponSystem',
+			id: 999,
+			name: 'PlayerController',
 			game_context: gameContext,
-			description: 'Fires bullets with rate limiting',
-			constraints: ['Max 5 shots/sec', '30 bullet limit']
+			description: 'WASD player controller for a top-down game',
+			constraints: ['Max move speed 10', 'Min move speed 2', 'Use Rigidbody2D']
 		},
 		'PlayerHealth': {
+			id: 998,
 			name: 'PlayerHealth',
 			game_context: gameContext,
 			description: 'Player HP with regeneration',
 			constraints: ['Max HP 100', 'Regen 1/sec']
 		},
 		'EnemySpawner': {
+			id: 997,
 			name: 'EnemySpawner',
 			game_context: gameContext,
 			description: 'Spawns enemy waves',
 			constraints: ['Max 50 enemies', '3 waves']
-		},
-		'ShufflerSystem': {
-			name: 'ShufflerSystem',
-			game_context: gameContext,
-			description: 'Fisher-Yates shuffle implementation',
-			constraints: ['Max 1000 items']
 		}
 	};
 	modules.push(presets[name]);
@@ -210,15 +209,20 @@ function compileDesign() {
 	$('#compile-btn').html('<i class="fas fa-spinner fa-spin"></i> Compiling...').prop('disabled', true);
 	$('#generate-btn').prop('disabled', true).html('<i class="fas fa-rocket"></i> WAITING FOR GDD GENERATOR...');
 
+	$('#agent-output').append(`
+		<div id="gdd-document" class="success fade-in" style="background:rgba(46,213,115,0.2);padding:15px;border-radius:10px;">
+			<strong>COMPILING GAME DESIGN DOCUMENT</strong><br>
+			<i class="fas fa-spinner fa-spin"></i> Compiling module designs...<br>
+		</div>
+	`);
+
 	fetch('/compile-design')
 		.then(response => response.json())
 		.then(data => {
-			$('#agent-output').append(`
-				<div class="success fade-in" style="background:rgba(46,213,115,0.2);padding:15px;border-radius:10px;">
-					✅ <strong>GAME DESIGN DOCUMENT COMPILED</strong><br>
-					📄 ${data.module_count} modules synthesized<br>
-					<a href="${data.download}" target="_blank" style="color:#2ed573;">Download GDD</a>
-				</div>
+			$('#gdd-document').html(`
+				✅ <strong>GAME DESIGN DOCUMENT COMPILED</strong><br>
+				📄 ${data.module_count} modules synthesized<br>
+				<a href="${data.download}" target="_blank" style="color:#2ed573;">Download GDD</a>
 			`);
 			$('#compile-btn').html('<i class="fas fa-file-alt"></i> 📖 Compile Game Design Document').prop('disabled', false);
 			$('#generate-btn').prop('disabled', false).html('<i class="fas fa-rocket"></i> GENERATE ALL MODULES');
@@ -288,3 +292,115 @@ async function loadFolders() {
 		alert('Error: ' + error.message);
 	}
 }
+
+document.getElementById('refresh-btn').addEventListener('click', (event) => {
+	loadOllamaModels();
+});
+
+async function installModel(event, modelName) {
+	const btn = event.target;
+	btn.disabled = true;
+	btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Installing...';
+	
+	$(".quick-installs button").prop('disabled', true);
+
+	try {
+		const response = await fetch('/api/pull-model', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			//body: JSON.stringify({ model_name: modelName })
+			body: modelName
+		});
+
+		const data = await response.json();
+
+		if (data.success) {
+			await loadOllamaModels();
+			document.getElementById('model-select').value = modelName;
+			btn.innerHTML = '<i class="fas fa-check"></i> Ready!';
+			btn.classList.add('bg-green-600');
+		}
+	} catch (e) {
+		btn.innerHTML = 'Install failed';
+		console.error('Install error:', e);
+	} finally {
+		btn.disabled = false;
+		$(".quick-installs button").prop('disabled', false);
+	}
+}
+
+async function loadOllamaModels() {
+	console.log("loadOllamaModels()");
+	const response = await fetch('/api/tags');
+	const data = await response.json();
+	console.log(data);
+	dropdown = new GlassyDropdown();
+	dropdown.loadModels(data.models);
+	console.log(dropdown);
+}
+
+class GlassyDropdown {
+	constructor() {
+		this.trigger = document.getElementById('dropdown-trigger');
+		this.list = document.getElementById('dropdown-list');
+		this.options = this.list.querySelectorAll('.dropdown-option');
+		this.selectedSpan = document.getElementById('selected-option');
+		this.isOpen = false;
+		
+		if (!this.trigger || !this.list || !this.selectedSpan) {
+			console.error('Dropdown elements missing');
+			return;
+		}
+
+		this.init();
+	}
+
+	init() {
+		this.trigger.addEventListener('click', () => this.toggle());
+		document.addEventListener('click', (e) => {
+			if (!this.trigger.contains(e.target)) this.close();
+		});
+
+		this.options.forEach(option => {
+			option.addEventListener('click', () => this.select(option));
+		});
+	}
+
+	toggle() {
+		this.isOpen = !this.isOpen;
+		this.list.classList.toggle('active');
+		this.trigger.classList.toggle('active');
+	}
+
+	close() {
+		this.isOpen = false;
+		this.list.classList.remove('active');
+		this.trigger.classList.remove('active');
+	}
+
+	select(option) {
+		const text = option.textContent;
+		this.selectedSpan.textContent = text;
+		this.close();
+	}
+
+	loadModels(models) {
+		this.list.innerHTML = '<div class="dropdown-option" data-value="">Select model...</div>';
+
+		models.forEach(model => {
+			const option = document.createElement('div');
+			option.className = 'dropdown-option';
+			option.dataset.value = model.name;
+			option.textContent = model.name;
+			this.list.appendChild(option);
+		});
+
+		// Re-attach event listeners
+		this.options = this.list.querySelectorAll('.dropdown-option');
+		this.options.forEach(option => {
+			option.addEventListener('click', () => this.select(option));
+		});
+	}
+}
+
+

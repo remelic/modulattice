@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import json
 import shutil
+import requests
 
 from unitymod import ModuleGenerator, ModuleSpec, ModuleLane, DesignCompiler
 
@@ -110,6 +111,30 @@ async def download_modules(filename: str):
             zf.writestr("manifest.json", json.dumps({"name": filename, "error": "Module not found"}))
     
     return FileResponse(zip_path, filename=f"{filename}.zip", media_type='application/zip')
+
+
+# GET INSTALLED OLLAMA MODELS
+@app.get("/api/tags")
+async def list_models():
+    try:
+        response = requests.get("http://localhost:11434/api/tags")
+        response.raise_for_status()
+        return response.json()  # ← Just return the dict!
+    except Exception as e:
+        print(f"Ollama error: {e}")
+        return {"models": []}  # ← Just return the dict!
+
+# GET OLLAMA MODELS
+@app.post("/api/pull-model")
+async def pull_model(model_name: str):
+    try:
+        response = requests.post("http://localhost:11434/api/pull",
+                               json={"name": model_name})
+        if response.status_code == 200:
+            return {"success": True, "model": model_name}
+        return {"success": False, "error": "Pull failed"}
+    except:
+        return {"success": False, "error": "Ollama not running"}
 
 # GET EXISTING MODULES
 @app.get("/api/folders")

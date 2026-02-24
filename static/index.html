@@ -1,13 +1,23 @@
 <!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
-    <meta charset="UTF-8">
+	<!--header-->
+	<meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Modulattice - AI Powered Unity Module Generation</title>
+	<!--javascript-->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 	<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+	<!--favicon-->
+	<link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
+	<link rel="icon" type="image/png" sizes="192x192" href="/static/android-chrome-192x192.png">
+	<link rel="icon" type="image/png" sizes="512x512" href="/static/android-chrome-512x512.png">
+	<link rel="manifest" href="/static/site.webmanifest">
+	<!--stylesheets-->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
 	<link rel="stylesheet" href="/static/dashboard.css">
 </head>
@@ -17,20 +27,59 @@
             <h1><i class="fas fa-cube"></i>Modulattice</h1>
             <p>AI-Powered Unity Module Generation</p>
         </div>
-        
-        <div class="main-grid">
+
+		<!-- Model selector with magic buttons -->
+		<div class="input-group">
+			<div class="model-section">
+				<div class="glassy-dropdown">
+					<div class="dropdown-trigger" id="dropdown-trigger">
+						<span id="selected-option">Select model...</span>
+						<i class="dropdown-arrow">▼</i>
+					</div>
+					<div class="dropdown-list" id="dropdown-list">
+						<div class="dropdown-option" data-value="">Select model...</div>
+						<input type="hidden" id="model-select-hidden" name="model_name">
+						<!-- populated by JS -->
+					</div>
+				</div>
+				<br>
+				<button class="btn btn-success" id="refresh-btn">Refrash Models</button>
+				<br><br>
+				<div class="quick-installs mt-4 grid grid-cols-2 gap-2">
+					<button class="btn btn-success expand-flex" onclick="installModel(event, 'llama3.1')"
+						class="px-4 py-2 bg-green-500/80 hover:bg-green-600 rounded-lg text-sm">
+						llama3.1
+					</button>
+					<button class="btn btn-success expand-flex" onclick="installModel(event, 'deepseek-coder:6.7b')"
+						class="px-4 py-2 bg-blue-500/80 hover:bg-blue-600 rounded-lg text-sm">
+						DeepSeek Coder
+					</button>
+					<button class="btn btn-success expand-flex" onclick="installModel(event, 'codellama:7b')"
+						class="px-4 py-2 bg-purple-500/80 hover:bg-purple-600 rounded-lg text-sm">
+						CodeLlama
+					</button>
+					<button class="btn btn-success expand-flex" onclick="installModel(event, 'qwen2.5-coder:7b')"
+						class="px-4 py-2 bg-orange-500/80 hover:bg-orange-600 rounded-lg text-sm">
+						Qwen Coder
+					</button>
+				</div>
+			</div>
+		</div>
+
+		<br>
+		<div class="main-grid">
 			<!-- Module List -->
             <div class="module-list">
 				<span class="input-group">
 					<label>Game Concept</label>
 					<input name="game_context" type="text" value="A 2D top-down game." onchange="updateGameConcept(this.value)">
 				</span>
+
                 <div class="preset-btns">
-                    <button class="preset-btn" onclick="addPreset('WeaponSystem')"><i class="fas fa-gun"></i> Weapon</button>
-                    <button class="preset-btn" onclick="addPreset('PlayerHealth')"><i class="fas fa-heart"></i> Health</button>
-                    <button class="preset-btn" onclick="addPreset('EnemySpawner')"><i class="fas fa-skull"></i> Enemy</button>
-                    <button class="preset-btn" onclick="addPreset('ShufflerSystem')"><i class="fas fa-random"></i> Shuffle</button>
-                    <button class="preset-btn" onclick="clearAll()"><i class="fas fa-trash"></i> Clear</button>
+					<button class="preset-btn expand-flex" onclick="clearAll()"><i class="fas fa-trash"></i> Clear</button>
+                    <button class="preset-btn expand-flex" onclick="addPreset('PlayerController')"><i class="fas fa-gun"></i> Controller</button>
+                    <button class="preset-btn expand-flex" onclick="addPreset('PlayerHealth')"><i class="fas fa-heart"></i> Health</button>
+                    <button class="preset-btn expand-flex" onclick="addPreset('EnemySpawner')"><i class="fas fa-skull"></i> Enemy</button>
                 </div>
                 
                 <button class="btn btn-primary" onclick="addModule()" style="width:100%; margin-bottom:20px;">
