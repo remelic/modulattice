@@ -16,7 +16,7 @@ Built by Unity devs for Unity devs
 1. Download the project files and run the following install:
 
 ```bash
-pip install fastapi uvicorn[standard] aiofiles ollama websockets modulattice requests
+pip install fastapi uvicorn[standard] aiofiles ollama websockets requests
 ```
 
 ```bash
