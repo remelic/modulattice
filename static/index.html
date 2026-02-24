@@ -19,9 +19,12 @@
         </div>
         
         <div class="main-grid">
-
 			<!-- Module List -->
             <div class="module-list">
+				<span class="input-group">
+					<label>Game Concept</label>
+					<input name="game_context" type="text" value="A 2D top-down game." onchange="updateGameConcept(this.value)">
+				</span>
                 <div class="preset-btns">
                     <button class="preset-btn" onclick="addPreset('WeaponSystem')"><i class="fas fa-gun"></i> Weapon</button>
                     <button class="preset-btn" onclick="addPreset('PlayerHealth')"><i class="fas fa-heart"></i> Health</button>

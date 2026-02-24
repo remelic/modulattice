@@ -1,6 +1,7 @@
 let modules = [];
 let ws = null;
 let generationComplete = false;
+let gameContext = "A 2D top-down game.";
 
 $(document).ready(async function() {
 	updateModuleList();
@@ -12,6 +13,7 @@ function addModule() {
 	modules.push({
 		id: id,
 		name: `Module${id + 1}`,
+		game_context: gameContext,
 		description: 'Describe your module in detail here.',
 		constraints: ['Constraint 1']
 	});
@@ -22,21 +24,25 @@ function addPreset(name) {
 	const presets = {
 		'WeaponSystem': {
 			name: 'WeaponSystem',
+			game_context: gameContext,
 			description: 'Fires bullets with rate limiting',
 			constraints: ['Max 5 shots/sec', '30 bullet limit']
 		},
 		'PlayerHealth': {
 			name: 'PlayerHealth',
+			game_context: gameContext,
 			description: 'Player HP with regeneration',
 			constraints: ['Max HP 100', 'Regen 1/sec']
 		},
 		'EnemySpawner': {
 			name: 'EnemySpawner',
+			game_context: gameContext,
 			description: 'Spawns enemy waves',
 			constraints: ['Max 50 enemies', '3 waves']
 		},
 		'ShufflerSystem': {
 			name: 'ShufflerSystem',
+			game_context: gameContext,
 			description: 'Fisher-Yates shuffle implementation',
 			constraints: ['Max 1000 items']
 		}
@@ -218,6 +224,14 @@ function compileDesign() {
 			$('#generate-btn').prop('disabled', false).html('<i class="fas fa-rocket"></i> GENERATE ALL MODULES');
 		});
 }	
+
+function updateGameConcept(gameConceptText) {
+	gameContext = gameConceptText;
+	modules.forEach((module, index) => {
+		console.log("Updating game_context = " + gameContext);
+		module.game_context = gameContext;
+	});
+}
 
 function printRobotReset() {
 	$('#agent-output').append(`
