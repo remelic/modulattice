@@ -46,7 +46,14 @@ function addPreset(name) {
 			constraints: ['Max 50 enemies', '3 waves']
 		}
 	};
-	modules.push(presets[name]);
+
+	const preset = presets[name];
+	if (!preset) {
+		console.error(`Preset "${name}" not found!`);
+		return;
+	}
+
+	modules.push({ ...preset });
 	updateModuleList();
 }
 
@@ -257,10 +264,33 @@ async function deleteFolder(folderName) {
 	}
 }
 
+async function deleteGameDesign() {
+	if (!confirm(`Delete Game Design Document?`)) return;
+	try {
+		const response = await axios.delete(`/api/game-design/delete`);
+		console.log(response);
+		loadFolders();
+	} catch (error) {
+		console.error('Full error:', error.response?.data || error.message);
+		alert('Delete Failed: ' + (error.response?.data?.detail || error.message));
+	}
+}
+
 function escapeHtml(text) {
 	const div = document.createElement('div');
 	div.textContent = text;
 	return div.innerHTML;
+}
+
+function printGameDesignFound() {
+	const row = `
+		<div class="existing-module fade-in">
+			<h2>Game Design Document</h2>
+			<button class="btn btn-danger" onclick="deleteGameDesign()" style="padding:8px 12px;">
+				<i class="fas fa-trash"></i>
+			</button>
+		</div>`;
+	return row;
 }
 
 function printExistingModule(folder) {
@@ -282,11 +312,18 @@ function printExistingModule(folder) {
 async function loadFolders() {
 	try {
 		const response = await axios.get('/api/folders');
+		const { folders, has_game_design } = response.data;
 		const tbody = document.querySelector('#folderTable');
 		tbody.innerHTML = '';
 
-		if (response.data.folders) {
-			response.data.folders.forEach(folder => tbody.innerHTML += printExistingModule(folder));
+		if (has_game_design) {
+			tbody.innerHTML += printGameDesignFound();
+		}
+
+		if (folders?.length) {
+			folders.forEach(folder => {
+				tbody.innerHTML += printExistingModule(folder);
+			});
 		}
 	} catch (error) {
 		alert('Error: ' + error.message);

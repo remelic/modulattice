@@ -141,12 +141,14 @@ async def pull_model(model_name: str):
 async def get_folders():
     FOLDER_PATH = Path("modules")
     folders = []
-    
+    has_game_design = False
     try:
         path = Path(FOLDER_PATH)
         if not path.exists():
             return {"error": "Path not found"}
-        
+
+        has_game_design = (path / "GAME_DESIGN.md").exists()
+
         for item in path.iterdir():
             if item.is_dir():
                 folders.append({
@@ -158,7 +160,7 @@ async def get_folders():
     except Exception as e:
         return {"error": str(e)}
     
-    return {"folders": folders}
+    return {"folders": folders, "has_game_design": has_game_design}
 
 @app.delete("/api/folders/{folder_name}")
 async def delete_folder(folder_name: str):
@@ -177,7 +179,21 @@ async def delete_folder(folder_name: str):
     except Exception as e:
         return {"error": str(e)}
 
-# BATCH DOWNLOAD  
+# DELETE GAME DESIGN
+@app.delete("/api/game-design/delete")
+async def delete_game_design():
+    file_path = Path("./modules") / "GAME_DESIGN.md"
+    
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="GAME_DESIGN.md not found")
+    
+    file_path.unlink()
+    if file_path.exists():
+        raise HTTPException(status_code=500, detail="Delete failed")
+    
+    return {"success": True}
+
+# BATCH DOWNLOAD
 @app.get("/download/all_modules.zip")
 async def download_all_modules():
     zip_path = Path("all_modules.zip")
