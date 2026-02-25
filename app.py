@@ -1,6 +1,7 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, FileResponse
+from fastapi import HTTPException
 import zipfile
 import asyncio
 import os
@@ -8,11 +9,11 @@ from pathlib import Path
 import json
 import shutil
 import requests
-
-from unitymod import ModuleGenerator, ModuleSpec, ModuleLane, DesignCompiler
+from modulattice import ModuleGenerator, ModuleSpec, ModuleLane, DesignCompiler
 
 app = FastAPI()
-generator = ModuleGenerator("llama3-custom")
+model_generators = {}
+# generator = ModuleGenerator("llama3-custom")
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root():
@@ -31,8 +32,22 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     try:
-        specs_data = await websocket.receive_json()
-        print(f"Generating {len(specs_data)} modules: {[s['name'] for s in specs_data]}")
+        data = await websocket.receive_json()
+        specs_data = data["specs"]
+        model_name = data.get("model")
+        
+        if not model_name:
+            await websocket.send_json({"type": "error", "message": "No model selected"})
+            return
+            
+        # Get or create generator for this model (cached)
+        if model_name not in model_generators:
+            print(f"Creating generator for model: {model_name}")
+            model_generators[model_name] = ModuleGenerator(model_name)
+        
+        generator = model_generators[model_name]
+        
+        print(f"Generating with {model_name}: {len(specs_data)} modules")
         
         for spec_data in specs_data:
             spec = ModuleSpec(
@@ -42,33 +57,22 @@ async def websocket_endpoint(websocket: WebSocket):
                 constraints=spec_data.get("constraints", [])
             )
             
-            # Setup lane
             modules_path = Path("modules")
             modules_path.mkdir(exist_ok=True)
             lane = ModuleLane(spec, root=modules_path / spec.name)
             
-            await websocket.send_json({
-                "type": "start",
-                "module": spec.name,
-                "path": str(lane.root)
-            })
-
+            await websocket.send_json({"type": "start", "module": spec.name, "path": str(lane.root)})
             await websocket.send_json({"type": "progress", "module": spec.name, "step": 1, "status": "Designing architecture..."})
             await websocket.send_json({"type": "progress", "module": spec.name, "step": 2, "status": "Implementing C# code..."}) 
             await websocket.send_json({"type": "progress", "module": spec.name, "step": 3, "status": "Verifying + auto-fixing..."})            
             
             success = generator.agent.generate_module(lane)
             
-            # Final status
             files = lane.list_files()
             await websocket.send_json({
-                "type": "complete",
-                "module": spec.name,
-                "success": success,
-                "files": [str(f) for f in files],
-                "total_files": len(files),
-                "path": str(lane.root),
-                "download_url": f"/download/{spec.name}.zip"
+                "type": "complete", "module": spec.name, "success": success,
+                "files": [str(f) for f in files], "total_files": len(files),
+                "path": str(lane.root), "download_url": f"/download/{spec.name}.zip"
             })
             
     except WebSocketDisconnect:
@@ -76,7 +80,6 @@ async def websocket_endpoint(websocket: WebSocket):
     except Exception as e:
         print(f"Error: {e}")
         await websocket.send_json({"type": "error", "message": str(e)})
-
 
 @app.get("/compile-design")
 async def compile_design():
