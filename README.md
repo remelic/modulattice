@@ -4,7 +4,7 @@
 This is not an Agent that will destroy your project...
 
 <p align="center">
-<strong>Type a prompt → Get a complete Unity module folder → Drag it into your project.</strong>
+<strong>Type a prompt → Get a complete Unity module folder → Review → Drag it into your project.</strong>
 <br>
 Built by Unity devs for Unity devs
 </p>
