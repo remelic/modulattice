@@ -61,7 +61,7 @@ Each module lives in its own folder, so Modulattice never touches your existing 
 - `llama3`
 - `deepseek-coder`
 - `CodeLlama`
-- Any model Ollamahas available
+- Any model Ollama has available
 - Possible API hooks in the future!
 
 ***
