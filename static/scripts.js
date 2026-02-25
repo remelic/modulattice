@@ -24,7 +24,7 @@ function addModule() {
 
 function addPreset(name) {
 	const presets = {
-		'WeaponSystem': {
+		'PlayerController': {
 			id: 999,
 			name: 'PlayerController',
 			game_context: gameContext,
@@ -129,7 +129,11 @@ function generateAll() {
 	
 	ws.onopen = function() {
 		console.log('🚀 Sending specs to backend:', modules);
-		ws.send(JSON.stringify(modules));
+		const selectedModel = document.getElementById('selected-option').textContent || '';
+		ws.send(JSON.stringify({
+			model: selectedModel,
+			specs: modules
+		}));
 	};
 
 	ws.onmessage = function(event) {
