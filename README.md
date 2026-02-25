@@ -13,8 +13,10 @@ Built by Unity devs for Unity devs
 
 ## Quickstart
 
+1. Download the project files and run the following install:
+
 ```bash
-pip install fastapi uvicorn[standard] aiofiles ollama websockets modulattice
+pip install fastapi uvicorn[standard] aiofiles ollama websockets requests
 ```
 
 ```bash
@@ -54,7 +56,7 @@ Each module lives in its own folder, so Modulattice never touches your existing 
 
 ## Installation
 
-From PyPI:
+From PyPI (coming soon...):
 
 ```bash
 pip install modulattice
@@ -64,7 +66,7 @@ pip install modulattice
 
 - `llama3` (current default)
 - `deepseek-coder`
-- Bring‑your‑own via Ollama (planned)
+- Choose‑your‑own via Ollama
 
 ***
 
