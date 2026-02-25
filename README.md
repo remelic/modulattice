@@ -1,6 +1,7 @@
 # Modulattice
 
 **Generate Unity game modules from a single description.** An AI‑powered module factory that designs and writes self‑contained C# systems (code, config, docs) so you can stop fighting boilerplate and focus on game design.
+This is not an Agent that will destroy your project...
 
 <p align="center">
 <strong>Type a prompt → Get a complete Unity module folder → Drag it into your project.</strong>
@@ -13,21 +14,22 @@ Built by Unity devs for Unity devs
 
 ## Quickstart
 
-1. Download the project files and run the following install:
+Pre: Requires Python
+1. Download the project files to a folder and run the following install in a command prompt from that folders location:
 
 ```bash
 pip install fastapi uvicorn[standard] aiofiles ollama websockets requests
 ```
 
 ```bash
-# In the repo folder
+# In the repo folder double click this to start:
 start.bat
 ```
 
 Then:
 
-1. Open the web UI.
-2. Enter a prompt like: `A player controller for a top‑down shooter`.
+1. Open the web UI (Should open automatically).
+2. Enter a detailed description like: `A player controller for a top‑down shooter`.
 3. Review the generated design + code.
 4. Copy the module folder into your Unity project once you’re happy with it.
 
@@ -54,19 +56,13 @@ Each module lives in its own folder, so Modulattice never touches your existing 
 
 ***
 
-## Installation
+**Supported LLMs:**
 
-From PyPI (coming soon...):
-
-```bash
-pip install modulattice
-```
-
-**Supported / planned LLMs:**
-
-- `llama3` (current default)
+- `llama3`
 - `deepseek-coder`
-- Choose‑your‑own via Ollama
+- `CodeLlama`
+- Any model Ollamahas available
+- Possible API hooks in the future!
 
 ***
 
