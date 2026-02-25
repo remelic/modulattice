@@ -76,7 +76,7 @@ Each module lives in its own folder, so Modulattice never touches your existing 
 ```bash
 git clone https://github.com/remelic/modulattice.git
 cd modulattice
-pip install -r requirements-dev.txt
+pip install fastapi uvicorn[standard] aiofiles ollama websockets requests
 start.bat
 ```
 
