@@ -37,13 +37,13 @@
 						<i class="dropdown-arrow">▼</i>
 					</div>
 					<div class="dropdown-list" id="dropdown-list">
-						<div class="dropdown-option" data-value="">Select model...</div>
+						<div class="dropdown-option" data-value=""><i class="fas fa-spinner fa-spin"></i> Loading models...</div>
 						<input type="hidden" id="model-select-hidden" name="model_name">
 						<!-- populated by JS -->
 					</div>
 				</div>
 				<br>
-				<button class="btn btn-success" id="refresh-btn">Refrash Models</button>
+				<button class="btn btn-success" id="refresh-btn">Refresh Models</button>
 				<br><br>
 				<div class="quick-installs mt-4 grid grid-cols-2 gap-2">
 					<button class="btn btn-success expand-flex" onclick="installModel(event, 'llama3.1')"
@@ -76,7 +76,7 @@
 				</span>
 
                 <div class="preset-btns">
-					<button class="btn btn-danger expand-flex" onclick="clearAll()"><i class="fas fa-trash"></i> Clear</button>
+					<button class="btn btn-danger expand-flex" onclick="clearAll()"><i class="fas fa-trash"></i> Clear All</button>
                     <button class="btn preset-btn expand-flex" onclick="addPreset('PlayerController')"><i class="fas fa-gun"></i> Controller</button>
                     <button class="btn preset-btn expand-flex" onclick="addPreset('PlayerHealth')"><i class="fas fa-heart"></i> Health</button>
                     <button class="btn preset-btn expand-flex" onclick="addPreset('EnemySpawner')"><i class="fas fa-skull"></i> Enemy</button>
@@ -112,6 +112,7 @@
             <!-- Live Agent Panel -->
             <div class="agent-panel">
                 <h2><i class="fas fa-brain"></i> Agent Console <span id="status-badge" style="float:right;padding:5px 15px;border-radius:20px;background:rgba(0,212,255,0.2);font-size:0.8em;">Ready</span></h2>
+				<br>
                 <div id="agent-output">
                     <div style="text-align:center;padding:60px;color:#666;">
                         <i class="fas fa-robot" style="font-size:4em;opacity:0.5;margin-bottom:20px;"></i>

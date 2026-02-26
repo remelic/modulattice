@@ -30,7 +30,6 @@ class ModuleSpec:
     pass
 
 
-
 class ModuleLane:
     def __init__(self, spec: ModuleSpec, root: Path = None):
         self.spec = spec
@@ -180,28 +179,31 @@ class GameModuleAgent:
         lane = kwargs.get("lane")
         return UnityTester.compile_test(lane.root)
 
-    def generate_module(self, lane: ModuleLane) -> bool:
+    async def generate_module(self, lane: ModuleLane, websocket, module_name: str) -> bool:
         print(f"\n{'='*70}")
         print(f"3-STEP PIPELINE: {lane.spec.name}")
         print(f"   {lane.spec.description}")
         print(f"{'='*70}")
         
         start_time = datetime.now()
-        
+
         # STEP 1: SYSTEM DESIGN
         print("\nSTEP 1/3: ARCHITECTURE DESIGN...")
+        await websocket.send_json({"type": "progress", "module": module_name, "step": 1, "status": "Designing architecture..."})
         design = self.template_processor.generate_design(lane.spec, self.model)
         lane.write_file("design.txt", design)
         print(f"   SAVED: design.txt ({len(design)} chars)")
         
         # STEP 2: C# IMPLEMENTATION  
         print("\nSTEP 2/3: CODE IMPLEMENTATION...")
+        await websocket.send_json({"type": "progress", "module": module_name, "step": 2, "status": "Implementing C# code..."})
         cs_code = self.template_processor.implement_design(lane.spec, lane.root / "design.txt", self.model)
         lane.write_file(f"{lane.spec.name}_ORIGINAL.cs", cs_code)
         print(f"   SAVED: {lane.spec.name}_ORIGINAL.cs ({len(cs_code)} chars)")
         
         # STEP 3: VERIFICATION + AUTO-FIX
         print("\nSTEP 3/3: CODE VERIFICATION...")
+        await websocket.send_json({"type": "progress", "module": module_name, "step": 3, "status": "Verifying + auto-fixing..."})
         final_cs = self.template_processor.verify_and_fix(lane.spec, lane.root / f"{lane.spec.name}_ORIGINAL.cs", self.model)
         lane.write_file(f"{lane.spec.name}_FIXED.cs", final_cs)
         print(f"VERIFIED: {lane.spec.name}_FIXED.cs ({len(final_cs)} chars)")
