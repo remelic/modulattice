@@ -196,6 +196,11 @@ body {
 	animation: fadeIn 0.5s ease-in;
 }
 
+.fade-out {
+	opacity: 0;
+	transform: translateY(-10px);
+}
+
 .existing-modules-panel {
 	background: rgba(0, 0, 0, 0.3);
 	border-radius: 20px;
