@@ -3,6 +3,7 @@ let ws = null;
 let generationComplete = false;
 let gameContext = "A 2D top-down game.";
 let dropdown = null;
+let selectedModel = 'llama3-custom';
 
 $(document).ready(async function() {
 	loadOllamaModels();
@@ -168,7 +169,7 @@ function generateAll() {
 
 			if (data.success) {
 				$('#download-btn, #unity-btn').prop('disabled', false);
-				$('#generate-btn').prop('disabled', false).html('<i class="fas fa-rocket"></i> GENERATE ALL MODULES');
+				resetButtons();
 				loadFolders();
 				modules = [];
 				updateModuleList();
@@ -181,6 +182,8 @@ function generateAll() {
 				</div>
 			`);
 			$('#status-badge').text('❌ Error').css('background', 'rgba(255,71,87,0.3)');
+
+			resetButtons();
 		}
 	};
 
@@ -192,12 +195,19 @@ function generateAll() {
 				<small>Make sure server is running: <code>uvicorn app:app --reload</code></small>
 			</div>
 		`);
-		$('#generate-btn').prop('disabled', false).html('<i class="fas fa-rocket"></i> GENERATE ALL MODULES');
+
+		resetButtons();
 	};
 
 	ws.onclose = function() {
+		resetButtons();
 		console.log('WebSocket closed');
 	};
+}
+
+function resetButtons() {
+	$('#compile-btn').html('<i class="fas fa-file-alt"></i> 📖 Compile Game Design Document').prop('disabled', false);
+	$('#generate-btn').prop('disabled', false).html('<i class="fas fa-rocket"></i> GENERATE ALL MODULES');
 }
 
 function resetGeneration() {
@@ -235,8 +245,7 @@ function compileDesign() {
 				📄 ${data.module_count} modules synthesized<br>
 				<a href="${data.download}" target="_blank" style="color:#2ed573;">Download GDD</a>
 			`);
-			$('#compile-btn').html('<i class="fas fa-file-alt"></i> 📖 Compile Game Design Document').prop('disabled', false);
-			$('#generate-btn').prop('disabled', false).html('<i class="fas fa-rocket"></i> GENERATE ALL MODULES');
+			resetButtons();
 		});
 }	
 
@@ -341,32 +350,67 @@ document.getElementById('refresh-btn').addEventListener('click', (event) => {
 async function installModel(event, modelName) {
 	const btn = event.target;
 	btn.disabled = true;
-	btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Installing...';
-	
-	$(".quick-installs button").prop('disabled', true);
+	btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Starting...';
 
 	try {
-		const response = await fetch('/api/pull-model', {
+		const pullResponse = await fetch('/api/pull-model', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
-			//body: JSON.stringify({ model_name: modelName })
-			body: modelName
+			body: JSON.stringify({ model_name: modelName })
 		});
 
-		const data = await response.json();
+		if (!pullResponse.ok) throw new Error('Pull request failed');
 
-		if (data.success) {
-			await loadOllamaModels();
-			document.getElementById('model-select').value = modelName;
-			btn.innerHTML = '<i class="fas fa-check"></i> Ready!';
-			btn.classList.add('bg-green-600');
-		}
-	} catch (e) {
+		btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Downloading...';
+
+		// Poll /api/tags until model appears (1 HOUR MAX)
+		let attempts = 0;
+		const maxAttempts = 3600; // 1hr @ 2s intervals
+
+		const pollInterval = setInterval(async () => {
+			attempts++;
+
+			if (attempts % 15 === 0) { // Every 30s
+				btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${modelName}<br><small>${attempts * 2}s</small>`;
+			}
+
+			try {
+				const tagsResponse = await fetch('/api/tags');
+				const data = await tagsResponse.json();
+
+				const modelReady = data.models.some(model =>
+					model.name === modelName ||
+					model.name.startsWith(modelName.split(':')[0])
+				);
+
+				if (modelReady) {
+					clearInterval(pollInterval);
+					btn.innerHTML = '<i class="fas fa-check"></i> Ready!';
+					btn.classList.add('bg-green-600');
+					loadOllamaModels(); // Refresh dropdown
+					return;
+				}
+
+				if (attempts > 900) { // 30min
+					btn.innerHTML = '<i class="fas fa-clock"></i> Large model downloading...';
+				}
+
+			} catch (e) {
+				console.error('Poll failed:', e);
+			}
+
+			// 1hr timeout
+			if (attempts >= maxAttempts) {
+				clearInterval(pollInterval);
+				btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Timeout - check terminal';
+				btn.disabled = false;
+			}
+		}, 2000);
+
+	} catch (error) {
 		btn.innerHTML = 'Install failed';
-		console.error('Install error:', e);
-	} finally {
 		btn.disabled = false;
-		$(".quick-installs button").prop('disabled', false);
+		console.error('Install error:', error);
 	}
 }
 
@@ -419,9 +463,11 @@ class GlassyDropdown {
 		this.trigger.classList.remove('active');
 	}
 
-	select(option) {
+	async select(option) {
 		const text = option.textContent;
 		this.selectedSpan.textContent = text;
+		selectedModel = text;
+		console.log('Model changed to:', selectedModel);
 		this.close();
 	}
 
