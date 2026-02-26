@@ -188,6 +188,14 @@ body {
 	font-size: 0.85em;
 }
 
+.file-preview-panel {
+	background: rgba(0, 0, 0, 0.3);
+	border-radius: 20px;
+	padding: 25px;
+	height: 80vh;
+	overflow-y: auto;
+}
+
 .generating {
 	animation: pulse 1.5s infinite;
 }
@@ -214,9 +222,17 @@ body {
 }
 
 .existing-module {
+	background: rgba(0, 0, 0, 0.3);
+	border-radius: 20px;
+	padding: 25px;
 	width: 100%;
 	margin-bottom: 21px;
 	border-radius: 20px;
+	margin-bottom: 5px;
+}
+
+.existing-module li {
+	list-style: none;
 }
 
 #folderTable h2 {

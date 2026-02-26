@@ -257,6 +257,7 @@ function compileDesign() {
 				<a href="${data.download}" target="_blank" style="color:#2ed573;">Download GDD</a>
 			`);
 			resetButtons();
+			loadFolders();
 		});
 }	
 
@@ -309,28 +310,55 @@ function escapeHtml(text) {
 function printGameDesignFound() {
 	const row = `
 		<div class="existing-module fade-in">
-			<h2>Game Design Document</h2>
-			<button class="btn btn-danger" onclick="deleteGameDesign()" style="padding:8px 12px;">
-				<i class="fas fa-trash"></i>
-			</button>
+			<div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 8px;">
+				<h2>Game Design Document</h2>
+				<button class="btn btn-danger" onclick="deleteGameDesign()" style="padding:8px 12px;">
+					<i class="fas fa-trash"></i>
+				</button>
+			</div>
 		</div>`;
 	return row;
 }
 
 function printExistingModule(folder) {
-	console.log(folder.name);
 	console.log(escapeHtml(folder.name));
-
 	const row = `
 		<div class="existing-module fade-in">
-			<h2>${folder.name}</h2>
-			<button class="btn btn-danger" onclick="deleteFolder('${escapeHtml(folder.name)}')" style="padding:8px 12px;">
-				<i class="fas fa-trash"></i>
-			</button>
+			<div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 8px;">
+				<h2>
+					${escapeHtml(folder.name)}
+				</h2>
+				<button class="btn btn-danger" onclick="deleteFolder('${escapeHtml(folder.name)}')" style="padding:8px 12px; margin-left: auto;">
+					<i class="fas fa-trash"></i>
+				</button>
+			</div>
+			<div>
+				<ul>
+				${folder.files.map(file =>
+			`<li style="margin-bottom:5px; cursor: pointer;" title="Click to preview"><span onclick="previewFile('${escapeHtml(folder.name)}/${escapeHtml(file)}'); return false;">${escapeHtml(file)}</span></li>`
+		).join('')}
+				</ul>
+			</div>
 			<div>Size: ${(folder.size || 0).toLocaleString()}</div>
 			<div>Last Modified: ${new Date(folder.modified * 1000).toLocaleString()}</div>
 		</div>`;
 	return row;
+}
+
+async function previewFile(filePath) {
+	try {
+		const preview = document.getElementById('preview-file-text');
+		preview.textContent = 'Loading...';
+
+		const response = await fetch(`/api/file-contents?path=${filePath}`);
+		if (!response.ok) throw new Error('File not found');
+
+		let content = await response.text();
+		content = content.replace(/\\n/g, '\n').replace(/\\t/g, '\t');
+		preview.textContent = content;
+	} catch (error) {
+		document.getElementById('preview-file-text').textContent = `Error: ${error.message}`;
+	}
 }
 
 async function loadFolders() {
