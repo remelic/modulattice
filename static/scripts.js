@@ -137,7 +137,7 @@ function generateAll() {
 		}));
 	};
 
-	ws.onmessage = function(event) {
+	ws.onmessage = async function(event) {
 		const data = JSON.parse(event.data);
 		console.log('📨 Received:', data);
 		
@@ -147,7 +147,7 @@ function generateAll() {
 					<h3><i class="fas fa-cube"></i> ${data.module} 
 						<span style="color:#00d4ff;float:right;font-size:0.8em;">${data.path}</span>
 					</h3>
-					<div class="progress-bar"><div class="progress-fill" style="width:10%"></div></div>
+					<div class="progress-bar"><div id="${data.module}-progress-bar" class="progress-fill" style="width:10%"></div></div>
 					<div class="thoughts" style="min-height:60px;">
 						📄 Creating templates...<br>
 						🤖 LLM filling code sections...
@@ -169,10 +169,7 @@ function generateAll() {
 
 			if (data.success) {
 				$('#download-btn, #unity-btn').prop('disabled', false);
-				resetButtons();
-				loadFolders();
-				modules = [];
-				updateModuleList();
+				await loadFolders();
 			}
 		} 
 		else if (data.type === 'error') {
@@ -185,6 +182,20 @@ function generateAll() {
 
 			resetButtons();
 		}
+		else if (data.type === 'progress') {
+			const $progress = $(`.module-progress[data-module="${data.module}"]`);
+			$progress.find('.progress-fill').css('width', (data.step * 30) + '%');
+			$progress.find('.thoughts').html(data.status);
+		}
+		else if (data.type === 'complete-all') {
+			$('#status-badge').text('Ready').css('background', 'rgba(46,213,115,0.3)');
+
+			if (data.success) {
+				$('#download-btn, #unity-btn').prop('disabled', false);
+				await loadFolders();
+				resetButtons();
+			}
+		} 
 	};
 
 	ws.onerror = function(error) {
@@ -421,7 +432,6 @@ async function loadOllamaModels() {
 	console.log(data);
 	dropdown = new GlassyDropdown();
 	dropdown.loadModels(data.models);
-	console.log(dropdown);
 }
 
 class GlassyDropdown {
@@ -487,7 +497,13 @@ class GlassyDropdown {
 		this.options.forEach(option => {
 			option.addEventListener('click', () => this.select(option));
 		});
+
+		if (models.length > 0) {
+			const firstRealOption = this.list.querySelector('.dropdown-option[data-value]:nth-child(2)');
+			if (firstRealOption) {
+				this.select(firstRealOption);
+			}
+		}		
 	}
 }
-
 

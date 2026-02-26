@@ -10,10 +10,14 @@ import json
 import shutil
 import requests
 from modulattice import ModuleGenerator, ModuleSpec, ModuleLane, DesignCompiler
+from pydantic import BaseModel
 
 app = FastAPI()
 model_generators = {}
 # generator = ModuleGenerator("llama3-custom")
+
+class PullModelRequest(BaseModel):
+    model_name: str
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root():
@@ -60,21 +64,20 @@ async def websocket_endpoint(websocket: WebSocket):
             modules_path = Path("modules")
             modules_path.mkdir(exist_ok=True)
             lane = ModuleLane(spec, root=modules_path / spec.name)
-            
+
             await websocket.send_json({"type": "start", "module": spec.name, "path": str(lane.root)})
-            await websocket.send_json({"type": "progress", "module": spec.name, "step": 1, "status": "Designing architecture..."})
-            await websocket.send_json({"type": "progress", "module": spec.name, "step": 2, "status": "Implementing C# code..."}) 
-            await websocket.send_json({"type": "progress", "module": spec.name, "step": 3, "status": "Verifying + auto-fixing..."})            
-            
-            success = generator.agent.generate_module(lane)
-            
+            success = await generator.agent.generate_module(lane, websocket, spec.name)
             files = lane.list_files()
+
             await websocket.send_json({
                 "type": "complete", "module": spec.name, "success": success,
                 "files": [str(f) for f in files], "total_files": len(files),
                 "path": str(lane.root), "download_url": f"/download/{spec.name}.zip"
             })
-            
+        await websocket.send_json({
+            "type": "complete-all"
+        })
+
     except WebSocketDisconnect:
         print("WebSocket disconnected")
     except Exception as e:
@@ -127,10 +130,9 @@ async def list_models():
 
 # GET OLLAMA MODELS
 @app.post("/api/pull-model")
-async def pull_model(model_name: str):
+async def pull_model(data: PullModelRequest):
     try:
-        response = requests.post("http://localhost:11434/api/pull",
-                               json={"name": model_name})
+        response = requests.post("http://localhost:11434/api/pull", json={"name": data.model_name})
         if response.status_code == 200:
             return {"success": True, "model": model_name}
         return {"success": False, "error": "Pull failed"}
