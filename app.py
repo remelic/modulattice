@@ -14,7 +14,6 @@ from pydantic import BaseModel
 
 app = FastAPI()
 model_generators = {}
-# generator = ModuleGenerator("llama3-custom")
 
 class PullModelRequest(BaseModel):
     model_name: str
@@ -154,16 +153,32 @@ async def get_folders():
 
         for item in path.iterdir():
             if item.is_dir():
+                files = [f.relative_to(item) for f in item.rglob("*") if f.is_file()]
                 folders.append({
                     "name": item.name,
                     "path": str(item.absolute()),
                     "size": sum(p.stat().st_size for p in item.rglob("*") if p.is_file()),
-                    "modified": item.stat().st_mtime
+                    "modified": item.stat().st_mtime,
+                    "files": [str(f) for f in files],
+                    "file_count": len(files)
                 })
     except Exception as e:
         return {"error": str(e)}
     
     return {"folders": folders, "has_game_design": has_game_design}
+
+# GET FILE CONTENTS
+@app.get("/api/file-contents")
+async def get_file_contents(path: str):
+    try:
+        file_path = Path("modules") / path
+        if not file_path.exists():
+            raise HTTPException(status_code=404, detail="File not found")
+
+        content = file_path.read_text(encoding='utf-8', errors='replace')
+        return content
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # DELETE FOLDER
 @app.delete("/api/folders/{folder_name}")
