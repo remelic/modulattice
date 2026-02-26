@@ -165,6 +165,7 @@ function generateAll() {
 				📋 ${data.files.join(', ')}<br>
 				🔗 <a href="${data.download_url}" target="_blank" style="color:#2ed573;">Download Module</a>
 			`);
+			document.getElementById(data.module + '-progress-bar').classList.add('fade-out');
 			$('#status-badge').text('Ready').css('background', 'rgba(46,213,115,0.3)');
 
 			if (data.success) {
@@ -189,7 +190,6 @@ function generateAll() {
 		}
 		else if (data.type === 'complete-all') {
 			$('#status-badge').text('Ready').css('background', 'rgba(46,213,115,0.3)');
-
 			if (data.success) {
 				$('#download-btn, #unity-btn').prop('disabled', false);
 				await loadFolders();
@@ -217,7 +217,7 @@ function generateAll() {
 }
 
 function resetButtons() {
-	$('#compile-btn').html('<i class="fas fa-file-alt"></i> 📖 Compile Game Design Document').prop('disabled', false);
+	$('#compile-btn').html('<i class="fas fa-file-alt"></i> Compile Game Design Document').prop('disabled', false);
 	$('#generate-btn').prop('disabled', false).html('<i class="fas fa-rocket"></i> GENERATE ALL MODULES');
 }
 
