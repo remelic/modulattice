@@ -96,7 +96,6 @@ async def compile_design():
 async def download_gdd():
     return FileResponse("modules/GAME_DESIGN.md", filename="GAME_DESIGN.md")
 
-
 # PER-MODULE DOWNLOAD
 @app.get("/download/{filename}")
 async def download_modules(filename: str):
@@ -114,7 +113,6 @@ async def download_modules(filename: str):
             zf.writestr("manifest.json", json.dumps({"name": filename, "error": "Module not found"}))
     
     return FileResponse(zip_path, filename=f"{filename}.zip", media_type='application/zip')
-
 
 # GET INSTALLED OLLAMA MODELS
 @app.get("/api/tags")
@@ -165,6 +163,7 @@ async def get_folders():
     
     return {"folders": folders, "has_game_design": has_game_design}
 
+# DELETE FOLDER
 @app.delete("/api/folders/{folder_name}")
 async def delete_folder(folder_name: str):
     FOLDER_PATH = "./modules"

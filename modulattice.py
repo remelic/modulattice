@@ -10,11 +10,12 @@ import ollama
 import subprocess
 import re
 from pathlib import Path
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, AsyncGenerator
 from dataclasses import dataclass, asdict
 from datetime import datetime
 from contextlib import contextmanager
- 
+
+
 @dataclass
 class ModuleSpec:
     name: str
@@ -29,7 +30,7 @@ class ModuleSpec:
     pass
 
 
- 
+
 class ModuleLane:
     def __init__(self, spec: ModuleSpec, root: Path = None):
         self.spec = spec
@@ -149,12 +150,15 @@ class UnityTester:
 class GameModuleAgent:
     def __init__(self, model: str = "llama3-custom"):
         self.model = model
+        print(f"model_name {model}")
+
         self.tools = {
             "read_file": self._tool_read,
             "write_file": self._tool_write,
             "list_files": self._tool_list,
             "compile_test": self._tool_compile
         }
+
         self.template_processor = TemplateProcessor()
    
     def _tool_read(self, **kwargs):
@@ -186,19 +190,19 @@ class GameModuleAgent:
         
         # STEP 1: SYSTEM DESIGN
         print("\nSTEP 1/3: ARCHITECTURE DESIGN...")
-        design = self.template_processor.generate_design(lane.spec)
+        design = self.template_processor.generate_design(lane.spec, self.model)
         lane.write_file("design.txt", design)
         print(f"   SAVED: design.txt ({len(design)} chars)")
         
         # STEP 2: C# IMPLEMENTATION  
         print("\nSTEP 2/3: CODE IMPLEMENTATION...")
-        cs_code = self.template_processor.implement_design(lane.spec, lane.root / "design.txt")
+        cs_code = self.template_processor.implement_design(lane.spec, lane.root / "design.txt", self.model)
         lane.write_file(f"{lane.spec.name}_ORIGINAL.cs", cs_code)
         print(f"   SAVED: {lane.spec.name}_ORIGINAL.cs ({len(cs_code)} chars)")
         
         # STEP 3: VERIFICATION + AUTO-FIX
         print("\nSTEP 3/3: CODE VERIFICATION...")
-        final_cs = self.template_processor.verify_and_fix(lane.spec, lane.root / f"{lane.spec.name}_ORIGINAL.cs")
+        final_cs = self.template_processor.verify_and_fix(lane.spec, lane.root / f"{lane.spec.name}_ORIGINAL.cs", self.model)
         lane.write_file(f"{lane.spec.name}_FIXED.cs", final_cs)
         print(f"VERIFIED: {lane.spec.name}_FIXED.cs ({len(final_cs)} chars)")
         
@@ -206,8 +210,8 @@ class GameModuleAgent:
             print("CHANGES MADE AND SAVED");
 
         # Config + Metadata
-        lane.write_file("Config.cs", self.template_processor.generate_config_class(
-            lane.spec, lane.root / "design.txt"  # Pass design!
+        lane.write_file(f"{lane.spec.name}Config.cs", self.template_processor.generate_config_class(
+            lane.spec, lane.root / "design.txt"
         ))
 
         self._generate_readme(lane)
@@ -270,7 +274,7 @@ text
 
  
 class TemplateProcessor:
-    def generate_design(self, spec: ModuleSpec) -> str:
+    def generate_design(self, spec: ModuleSpec, model_name: str = "llama3-custom") -> str:
         """STEP 1: Generate COMPLETE Unity module blueprint"""
         prompt = f"""ARCHITECT a COMPLETE Unity C# {spec.name} module:
     
@@ -342,10 +346,10 @@ class TemplateProcessor:
             {"role": "user", "content": prompt}
         ]
         
-        response = ollama.chat(model="llama3-custom", messages=messages)
+        response = ollama.chat(model=model_name, messages=messages)
         return strip_comments(response['message']['content'].strip())
         
-    def implement_design(self, spec, design_path: Path) -> str:
+    def implement_design(self, spec, design_path: Path, model_name: str = "llama3-custom") -> str:
         """STEP 2: MECHANICAL translation of design → C# code"""
         design = design_path.read_text()
         
@@ -369,14 +373,14 @@ class TemplateProcessor:
     • Pool GameObjects/Reusable objects"""},
             {"role": "user", "content": f"DESIGN BLUEPRINT:\n\n{design}"},
             {"role": "assistant", "content": design},
-            {"role": "user", "content": f"TRANSLATE EXACTLY to C# class `{spec.name}` inheriting MonoBehaviour with `public Config config;`"}
+            {"role": "user", "content": f"TRANSLATE EXACTLY to C# class `{spec.name}` inheriting MonoBehaviour. Create a complementary dataclass in the same file, that can save and load data."}
         ]
         
-        response = ollama.chat(model="llama3-custom", messages=messages)
+        response = ollama.chat(model=model_name, messages=messages)
         return strip_comments(response['message']['content'].strip())
 
 
-    def verify_and_fix(self, spec, cs_path: Path, max_iterations: int = 3) -> str:
+    def verify_and_fix(self, spec, cs_path: Path, model_name: str = "llama3-custom", max_iterations: int = 3) -> str:
         """STEP 3: Structural verification + auto-fix"""
         cs_code = cs_path.read_text()
         design = (cs_path.parent / "design.txt").read_text()
@@ -384,7 +388,7 @@ class TemplateProcessor:
         quick_errors = self._quick_checks(spec, cs_code)
         
         messages = [
-            {"role": "system", "content": "You are a Unity C# compiler. Fix EXACT errors only. Return corrected code ONLY."},
+            {"role": "system", "content": "You are a Unity C# compiler. Fix EXACT errors only. Return corrected code ONLY. It is critical that you complete any missing or empty methods."},
             {"role": "user", "content": f"DESIGN:\n{design}"},
             {"role": "assistant", "content": design},
             {"role": "user", "content": f"CURRENT CODE:\n{cs_code}"},
@@ -396,10 +400,10 @@ class TemplateProcessor:
 
     Return corrected code ONLY."""})
         else:
-            messages.append({"role": "user", "content": f"VERIFY {spec.name} matches design above. If perfect: 'VERIFIED'. If errors: corrected code ONLY."})
+            messages.append({"role": "user", "content": f"VERIFY {spec.name} matches design above. If perfect: 'VERIFIED'. If errors: corrected code ONLY. It is critical that you complete any missing or empty methods."})
         
         for iteration in range(max_iterations):
-            response = ollama.chat(model="llama3-custom", messages=messages)
+            response = ollama.chat(model=model_name, messages=messages)
             result = response['message']['content'].strip()
             
             if result.startswith("VERIFIED"):
@@ -422,14 +426,12 @@ class TemplateProcessor:
             errors.append(f"Missing class {spec.name}")
         if ": MonoBehaviour" not in code:
             errors.append("Must inherit MonoBehaviour")
-        if "public Config config" not in code:
-            errors.append("Missing `public Config config;`")
         if "using UnityEngine;" not in code:
             errors.append("Missing using UnityEngine;")
         return errors
     
     def generate_config_class(self, spec: ModuleSpec, design_path: Optional[Path] = None) -> str:
-        """Generate Config ScriptableObject DIRECTLY from design blueprint"""
+        """Generate A ScriptableObject DIRECTLY from design blueprint"""
         
         if design_path and design_path.exists():
             design = design_path.read_text()
@@ -443,7 +445,7 @@ class TemplateProcessor:
         return f"""using UnityEngine;
 
     [CreateAssetMenu(fileName = "{spec.name}", menuName = "Configs/{spec.name}")]
-    public class Config : ScriptableObject {{
+    public class {spec.name}Config : ScriptableObject {{
     {fields_code}
     }}
     """
@@ -515,9 +517,7 @@ class TemplateProcessor:
     def _get_generic_fields(self, spec: ModuleSpec) -> List[str]:
         """Fallback generic fields"""
         return [
-            f'    public float mainSpeed = 5f;',
-            f'    public int maxCount = 30;',
-            f'    [Range(0f, 10f)] public float cooldown = 1f;'
+            f'    public float speed = 1f;'
         ]
 
 
@@ -562,7 +562,7 @@ class DesignCompiler:
     def __init__(self, modules_path: Path = Path("modules")):
         self.modules_path = modules_path
         
-    def compile_game_design(self) -> str:
+    def compile_game_design(self, model_name: str = "llama3-custom") -> str:
         """Compile all design.txt → unified GDD"""
         modules = self._find_module_designs()
         if not modules:
@@ -572,7 +572,7 @@ class DesignCompiler:
         
         # LLM synthesizes the big picture
         designs = self._load_all_designs(modules)
-        gdd = self._generate_gdd(designs, modules)
+        gdd = self._generate_gdd(designs, modules, model_name)
         
         output_path = self.modules_path / "GAME_DESIGN.md"
         output_path.write_text(gdd, encoding='utf-8')
@@ -596,7 +596,7 @@ class DesignCompiler:
             designs[module_folder.name] = design_file.read_text()
         return designs
     
-    def _generate_gdd(self, designs: Dict[str, str], modules: List[Path]) -> str:
+    def _generate_gdd(self, designs: Dict[str, str], modules: List[Path], model_name: str = "llama3-custom") -> str:
         """LLM: Synthesize module blueprints → cohesive GAME DESIGN DOCUMENT"""
         
         # Extract structured data from blueprints FIRST
@@ -657,7 +657,7 @@ Visual style | UI approach | Audio mood
         messages.append({"role": "user", "content": prompt_continuation})
         
         response = ollama.chat(
-            model="llama3-custom",
+            model=model_name,
             messages=messages,
             options={"temperature": 0.2}  # Lower for consistency
         )
