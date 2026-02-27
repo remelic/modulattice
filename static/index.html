@@ -24,7 +24,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1><i class="fas fa-cube"></i>Modulattice</h1>
+            <h1><i class="fas fa-gear"></i>Modulattice</h1>
             <p>AI-Powered Unity Module Generation</p>
         </div>
 
@@ -33,7 +33,7 @@
 			<div class="model-section">
 				<div class="glassy-dropdown">
 					<div class="dropdown-trigger" id="dropdown-trigger">
-						<span id="selected-option">Select model...</span>
+						<span id="selected-option"><i class="fas fa-spinner fa-spin"></i> Checking Models...</span>
 						<i class="dropdown-arrow">▼</i>
 					</div>
 					<div class="dropdown-list" id="dropdown-list">
@@ -43,8 +43,9 @@
 					</div>
 				</div>
 				<br>
-				<button class="btn btn-success" id="refresh-btn">Refresh Models</button>
+				<button class="btn btn-primary" id="refresh-btn">Refresh Models</button>
 				<br><br>
+				<div style="color:#666; margin-bottom: 10px;">Click to Download</div>
 				<div class="quick-installs mt-4 grid grid-cols-2 gap-2">
 					<button class="btn btn-success expand-flex" onclick="installModel(event, 'llama3.1')"
 						class="px-4 py-2 bg-green-500/80 hover:bg-green-600 rounded-lg text-sm">
@@ -75,16 +76,16 @@
 					<input name="game_context" type="text" value="A 2D top-down game." onchange="updateGameConcept(this.value)">
 				</span>
 
-                <div class="preset-btns">
+				<button class="btn btn-primary" onclick="addModule()" style="width:100%; height:60px; margin-top:20px;">
+					<i class="fas fa-plus"></i> Add New Module
+				</button>
+
+				<div class="preset-btns">
 					<button class="btn btn-danger expand-flex" onclick="clearAll()"><i class="fas fa-trash"></i> Clear All</button>
-                    <button class="btn preset-btn expand-flex" onclick="addPreset('PlayerController')"><i class="fas fa-gun"></i> Controller</button>
-                    <button class="btn preset-btn expand-flex" onclick="addPreset('PlayerHealth')"><i class="fas fa-heart"></i> Health</button>
-                    <button class="btn preset-btn expand-flex" onclick="addPreset('EnemySpawner')"><i class="fas fa-skull"></i> Enemy</button>
+                    <!-- <button class="btn preset-btn expand-flex" onclick="addPreset('PlayerController')"><i class="fas fa-gun"></i> Controller</button> -->
+					<!-- <button class="btn preset-btn expand-flex" onclick="addPreset('PlayerHealth')"><i class="fas fa-heart"></i> Health</button> -->
+					<!-- <button class="btn preset-btn expand-flex" onclick="addPreset('EnemySpawner')"><i class="fas fa-skull"></i> Enemy</button> -->
                 </div>
-                
-                <button class="btn btn-primary" onclick="addModule()" style="width:100%; margin-bottom:20px;">
-                    <i class="fas fa-plus"></i> Add New Module
-                </button>
                 
                 <div id="module-list"></div>
                 
@@ -95,17 +96,28 @@
 				 <button class="btn btn-success" onclick="compileDesign()" id="compile-btn" style="width:100%; margin-top:10px;">
 					 <i class="fas fa-file-alt"></i> Compile Game Design Document
 				 </button>					
-				 <button class="btn btn-primary" onclick="resetGeneration()" style="width:100%; margin-top:10px;">
-					 <i class="fas fa-refresh"></i> Reset & Generate Again
-				 </button>					
 				 <div style="display:flex; justify-content: space-between;">
-                    <button class="btn btn-primary" onclick="downloadZip()" id="download-btn" style="width:48%; margin-top:10px;" disabled>
+                    <button class="btn btn-primary" onclick="downloadZip()" id="download-btn" style="width:49%; margin-top:10px;" disabled>
                         <i class="fas fa-download"></i> Download ZIP
                     </button>
-                    <button class="btn btn-primary" onclick="exportUnityPackage()" id="unity-btn" style="width:48%; margin-top:10px;" disabled>
+                    <button class="btn btn-primary" onclick="exportUnityPackage()" id="unity-btn" style="width:49%; margin-top:10px;" disabled>
                         <i class="fab fa-unity"></i> Unity Package
                     </button>
 				 </div>
+				<div style="display:flex; justify-content: space-between;">
+					<div class="file-container">
+						<input type="file" id="fileInput" accept=".json" class="file-input" />
+						<label for="fileInput" class="file-label">
+							📁 Choose JSON File
+						</label>
+					</div>
+					<button class="btn btn-primary" onclick="importModules()" id="import-btn" style="margin-top:10px;">
+						<i class="fas fa-upload"></i> Import Pack
+					</button>
+					<button class="btn btn-primary" onclick="exportModules()" id="export-btn" style="margin-top:10px;">
+						<i class="fas fa-download"></i> Export Pack
+					</button>
+				</div>
                 </div>
             </div>
             

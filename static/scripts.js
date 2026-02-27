@@ -13,7 +13,7 @@ $(document).ready(async function() {
 
 function addModule() {
 	let id = modules.length;
-	modules.push({
+	modules.unshift({
 		id: id,
 		name: `Module${id + 1}`,
 		game_context: gameContext,
@@ -102,6 +102,65 @@ function removeModule(id) {
 	updateModuleList();
 }
 
+function importModules() {
+	const input = document.getElementById('fileInput');
+	const file = input.files[0];
+	if (!file) {
+		alert('Please choose a JSON file first.');
+		return;
+	}
+
+	const reader = new FileReader();
+
+	reader.onload = (event) => {
+		try {
+			const text = event.target.result;
+			const data = JSON.parse(text);
+
+			// If the JSON root is an array:
+			if (Array.isArray(data)) {
+				modules = data;
+			} else {
+				// If the JSON has an object with an array property, adapt this:
+				modules = data.items || [];
+			}
+		} catch (err) {
+			console.error('Invalid JSON file', err);
+			alert('The selected file is not valid JSON.');
+		}
+	};
+
+	reader.onerror = (err) => {
+		console.error('File read error', err);
+		alert('Error reading file.');
+	};
+
+	reader.readAsText(file);
+	updateModuleList();
+}
+
+function exportModules() {
+	console.log("Exporting!");	
+	if (!Array.isArray(modules) || modules.length === 0) {
+		alert('No modules to export.');
+		console.log("No modules!");	
+		return;
+	}
+
+	console.log("Pass Check 1");	
+
+	const json = JSON.stringify(modules, null, 2);
+	const blob = new Blob([json], { type: 'application/json' });
+	const url = URL.createObjectURL(blob);
+	const a = document.createElement('a');
+	a.href = url;
+	a.download = 'modules.json';
+	a.click();
+
+	URL.revokeObjectURL(url);
+	console.log("Exit Method");	
+}
+
 function clearAll() {
 	$('#agent-output').empty();
 	$('#status-badge').text('Ready').css('background', 'rgba(0,212,255,0.2)');
@@ -165,7 +224,7 @@ function generateAll() {
 				📋 ${data.files.join(', ')}<br>
 				🔗 <a href="${data.download_url}" target="_blank" style="color:#2ed573;">Download Module</a>
 			`);
-			document.getElementById(data.module + '-progress-bar').classList.add('fade-out');
+			document.getElementById(data.module + '-progress-bar').classList.add('bg-green-600');
 			$('#status-badge').text('Ready').css('background', 'rgba(46,213,115,0.3)');
 
 			if (data.success) {
@@ -186,7 +245,7 @@ function generateAll() {
 		else if (data.type === 'progress') {
 			const $progress = $(`.module-progress[data-module="${data.module}"]`);
 			$progress.find('.progress-fill').css('width', (data.step * 30) + '%');
-			$progress.find('.thoughts').html(data.status);
+			$progress.find('.thoughts').html('<i class="fas fa-spinner fa-spin"></i>&nbsp;' + data.status);
 		}
 		else if (data.type === 'complete-all') {
 			$('#status-badge').text('Ready').css('background', 'rgba(46,213,115,0.3)');
@@ -348,7 +407,7 @@ function printExistingModule(folder) {
 async function previewFile(filePath) {
 	try {
 		const preview = document.getElementById('preview-file-text');
-		preview.textContent = 'Loading...';
+		preview.textContent = '<i class="fas fa-spinner fa-spin"></i> Loading...';
 
 		const response = await fetch(`/api/file-contents?path=${filePath}`);
 		if (!response.ok) throw new Error('File not found');

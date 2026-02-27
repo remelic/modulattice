@@ -363,6 +363,58 @@ body {
 	padding: 20px;
 } */
 
+
+.file-container {
+	margin-top:8px;
+	position: relative;
+	display: inline-block;
+}
+
+.file-input {
+	display: none;
+	/* Hide native input */
+}
+
+.file-label {
+	/* Glass base */
+	background: rgba(255, 255, 255, 0.15);
+	backdrop-filter: blur(20px);
+	-webkit-backdrop-filter: blur(20px);
+
+	/* Shape & position */
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	padding: 10px 16px;
+	border-radius: 16px;
+	border: 1px solid rgba(255, 255, 255, 0.2);
+
+	/* Text */
+	color: white;
+	font-size: 16px;
+	font-weight: 500;
+	cursor: pointer;
+	user-select: none;
+	transition: all 0.3s ease;
+
+	/* Glow */
+	box-shadow:
+		0 8px 32px rgba(0, 0, 0, 0.1),
+		inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.file-label:hover {
+	background: rgba(255, 255, 255, 0.25);
+	transform: translateY(-2px);
+	box-shadow:
+		0 12px 40px rgba(0, 0, 0, 0.15),
+		inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.file-label:active {
+	transform: translateY(0);
+}
+
 @keyframes pulse {
 	0%, 100% {
 		opacity: 1;
