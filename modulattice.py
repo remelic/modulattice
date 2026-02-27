@@ -211,16 +211,11 @@ class GameModuleAgent:
         if len(cs_code) != len(final_cs):
             print("CHANGES MADE AND SAVED");
 
-        # Config + Metadata
-        lane.write_file(f"{lane.spec.name}Config.cs", self.template_processor.generate_config_class(
-            lane.spec, lane.root / "design.txt"
-        ))
-
         self._generate_readme(lane)
         self._generate_audit(lane)
         
         # Unity test
-        compile_result = UnityTester.compile_test(lane.root)
+        # compile_result = UnityTester.compile_test(lane.root)
         
         end_time = datetime.now()
         duration = end_time - start_time
@@ -277,74 +272,12 @@ text
  
 class TemplateProcessor:
     def generate_design(self, spec: ModuleSpec, model_name: str = "llama3-custom") -> str:
-        """STEP 1: Generate COMPLETE Unity module blueprint"""
-        prompt = f"""ARCHITECT a COMPLETE Unity C# {spec.name} module:
-    
-    GAME CONTEXT: {spec.game_context}
-
-    SPEC: {spec.description}
+        """STEP 1: Generate COMPLETE Unity Game Engine module blueprint"""
+        prompt = f"""Generate Unity design doc from '{spec.description}'. Only document text in point form. {spec.game_context},
     CONSTRAINTS: {', '.join(spec.constraints or [])}
-
-    CRITICAL REQUIREMENTS:
-    • Inherits MonoBehaviour 
-    • public Config config; (ScriptableObject)
-    • NO allocations in Update()
-    • Production-ready Unity code
-
-    ---
-
-    DESIGN BLUEPRINT (FOLLOW EXACTLY, NO CODE):
-
-    1. SYSTEM ROLE  
-    What does {spec.name} DO in the game architecture?
-
-    2. STATE MODEL  
-    [List/TYPE] fieldName // purpose
-    [float] lastTime // timing/cooldowns
-    [Config→] settingName // configurable
-
-    3. CORE METHODS  
-    void Start() {{ // initialization }}
-    void Update() {{ // main logic }}
-    void SomeMethod() {{ // custom logic }}
-
-    4. CORE ALGORITHM  
-    Update() → if(condition) {{ process logic }}
-
-    5. CONFIG FIELDS  
-    float rate = config.mainSpeed // [Range(0.1, 10)]
-    int maxCount = config.maxCount // range/tooltip
-
-    6. CONSTRAINT HANDLING  
-    Rate limit: Time.time > lastTime + 1/config.rate
-    Limit: count < config.maxCount
-
-    7. PERFORMANCE STRATEGY  
-    Pool: ObjectPool.Instance.Spawn()
-    Cache: Transform _cachedTransform
-    Avoid: new GameObject(), List.Add in Update()
-
-    8. INITIALIZATION FLOW  
-    Start() → Setup pools, cache components, validate config
-
-    ---
-
-    EXAMPLE OUTPUT:
-    1. SYSTEM ROLE
-    PlayerHealth manages HP, damage, and regeneration...
-
-    2. STATE MODEL
-    [int] currentHealth // 0-100 HP
-    [float] lastDamageTime // damage cooldown
-    [float] lastRegenTime // regen timing
-
-    3. CORE METHODS
-    void Start() {{ Initialize health }}
-
-    """
-
+        """
         messages = [
-            {"role": "system", "content": """You are a Unity C# game architect. Generate COMPLETE, production-ready module blueprints that directly compile to working code. Focus on memory efficiency. Follow the 8-section format EXACTLY."""},
+            {"role": "system", "content": """You are a Unity game designer."""},
             {"role": "user", "content": prompt}
         ]
         
@@ -354,28 +287,13 @@ class TemplateProcessor:
     def implement_design(self, spec, design_path: Path, model_name: str = "llama3-custom") -> str:
         """STEP 2: MECHANICAL translation of design → C# code"""
         design = design_path.read_text()
-        
         messages = [
-            {"role": "system", "content": """You translate Unity DESIGN BLUEPRINTS → PRODUCTION C# code EXACTLY.
-    
+            {"role": "system", "content": """You are a Unity C# game developer.
     GAME CONTEXT: {spec.game_context}
-
-    RULES:
-    • Copy field names/types DIRECTLY from STATE MODEL section
-    • Use config.fieldName EXACTLY as written in CONFIG FIELDS
-    • Translate CORE ALGORITHM pseudocode → real Update()
-    • NO CREATIVE CHANGES. Direct translation only.
-    • ZERO comments, regions, TODOs
-    • using UnityEngine; using System.Collections.Generic;
-
-    MEMORY:
-    • NO Update() allocations
-    • Pre-size Lists/Dictionaries  
-    • Cache GetComponent<T>()
-    • Pool GameObjects/Reusable objects"""},
+            """},
             {"role": "user", "content": f"DESIGN BLUEPRINT:\n\n{design}"},
             {"role": "assistant", "content": design},
-            {"role": "user", "content": f"TRANSLATE EXACTLY to C# class `{spec.name}` inheriting MonoBehaviour. Create a complementary dataclass in the same file, that can save and load data."}
+            {"role": "user", "content": f"Write a Unity C# class `{spec.name}`, using the design. Include a complementary data class. Only code."}
         ]
         
         response = ollama.chat(model=model_name, messages=messages)
@@ -390,7 +308,7 @@ class TemplateProcessor:
         quick_errors = self._quick_checks(spec, cs_code)
         
         messages = [
-            {"role": "system", "content": "You are a Unity C# compiler. Fix EXACT errors only. Return corrected code ONLY. It is critical that you complete any missing or empty methods."},
+            {"role": "system", "content": "You are a Unity C# compiler. Fix EXACT errors only. Return corrected code ONLY. Complete any missing or empty methods."},
             {"role": "user", "content": f"DESIGN:\n{design}"},
             {"role": "assistant", "content": design},
             {"role": "user", "content": f"CURRENT CODE:\n{cs_code}"},
@@ -398,11 +316,10 @@ class TemplateProcessor:
         
         if quick_errors:
             messages.append({"role": "user", "content": f"""FIX THESE ERRORS:
-    {chr(10).join(quick_errors)}
-
+    {chr(10).join(quick_errors)},
     Return corrected code ONLY."""})
         else:
-            messages.append({"role": "user", "content": f"VERIFY {spec.name} matches design above. If perfect: 'VERIFIED'. If errors: corrected code ONLY. It is critical that you complete any missing or empty methods."})
+            messages.append({"role": "user", "content": f"VERIFY {spec.name} matches design above. If perfect: 'VERIFIED'. If errors: corrected code ONLY."})
         
         for iteration in range(max_iterations):
             response = ollama.chat(model=model_name, messages=messages)
@@ -431,109 +348,10 @@ class TemplateProcessor:
         if "using UnityEngine;" not in code:
             errors.append("Missing using UnityEngine;")
         return errors
-    
-    def generate_config_class(self, spec: ModuleSpec, design_path: Optional[Path] = None) -> str:
-        """Generate A ScriptableObject DIRECTLY from design blueprint"""
-        
-        if design_path and design_path.exists():
-            design = design_path.read_text()
-            config_fields = self._parse_config_fields(design, spec)
-        else:
-            config_fields = self._get_generic_fields(spec)
-        
-        fields_code = "    [Header(\"{spec.name} Settings\")]\n".format(spec=spec)
-        fields_code += "\n".join(config_fields)
-        
-        return f"""using UnityEngine;
-
-    [CreateAssetMenu(fileName = "{spec.name}", menuName = "Configs/{spec.name}")]
-    public class {spec.name}Config : ScriptableObject {{
-    {fields_code}
-    }}
-    """
-
-    def _parse_config_fields(self, design: str, spec: ModuleSpec) -> List[str]:
-        """Extract EXACT config fields from CONFIG FIELDS blueprint section"""
-        lines = design.splitlines()
-        config_lines = []
-        in_config_section = False
-        
-        for line in lines:
-            line = line.strip()
-            
-            # Detect CONFIG FIELDS section
-            if "CONFIG FIELDS" in line.upper():
-                in_config_section = True
-                continue
-                
-            if in_config_section:
-                # Parse: "float rate = config.fireRate // [Range(0.1, 10)]"
-                if "config." in line and "=" in line:
-                    field_code = self._parse_field_line(line, spec)
-                    if field_code:
-                        config_lines.append(field_code)
-                
-                # Stop at next section
-                if any(num in line for num in ["6.", "7.", "8."]) or not line:
-                    break
-        
-        return config_lines if config_lines else self._get_generic_fields(spec)
-
-    def _parse_field_line(self, line: str, spec: ModuleSpec) -> str:
-        """Parse single config field: "float rate = config.fireRate // [Range(0.1, 10)]" """
-        try:
-            # Extract field name after "config."
-            field_match = re.search(r'config\.(\w+)', line)
-            if not field_match:
-                return None
-                
-            field_name = field_match.group(1)
-            
-            # Type inference from line
-            type_map = {
-                'float': 'float', 'int': 'int', 'bool': 'bool',
-                'Vector2': 'Vector2', 'Vector3': 'Vector3'
-            }
-            field_type = 'float'  # Default
-            
-            for t in type_map:
-                if t in line:
-                    field_type = t
-                    break
-            
-            # Range attributes
-            range_attr = ""
-            range_match = re.search(r'\[Range\(([^)]+)\)\]', line)
-            if range_match:
-                range_attr = f"[Range({range_match.group(1)})]"
-            
-            # Default value
-            default_match = re.search(r'=([^/]+)', line)
-            default_val = " = 1f" if default_match else ""
-            
-            return f"    {range_attr} public {field_type} {field_name}{default_val};"
-            
-        except:
-            return None
-
-    def _get_generic_fields(self, spec: ModuleSpec) -> List[str]:
-        """Fallback generic fields"""
-        return [
-            f'    public float speed = 1f;'
-        ]
-
-
-    def generate_templates(self, spec: ModuleSpec) -> dict[str, str]:
-        """Generate complete .cs files directly"""
-        return {
-            f"{spec.name}.cs": self.generate_complete_class(spec),
-            f"{spec.name}Config.cs": self.generate_config_class(spec)
-        }    
 
 
  
 class ModuleGenerator:
-    #def __init__(self, model: str = "deepseek-coder:6.7b"):
     def __init__(self, model: str = "llama3-custom"):
         self.agent = GameModuleAgent(model)
         
@@ -610,7 +428,6 @@ class DesignCompiler:
 
 CRITICAL:
 • Infer GAME GENRE, THEME, SETTING from module roles
-• Map module interactions → CORE LOOP
 • Generate GAME TITLE from combined systems
 • Professional Markdown GDD format
 • NO CODE, only high-level design""" },
